@@ -6,6 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Speedo">
 <title>Speedometer</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0b0f14">
 <style>
 :root{--bg:#0b0f14;--card:#151b23;--text:#f2f5f8;--mute:#8b97a5;--acc:#2ee6a6;--warn:#ff5d5d;--track:#222b36;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f3f6f9;--card:#fff;--text:#10161d;--mute:#5d6a78;--acc:#00946a;--warn:#d62d2d;--track:#dfe5ec;color-scheme:light}}
@@ -61,11 +64,21 @@ select.btn{border:0;text-align:center;text-align-last:center}
   .grid{margin-top:0}
   header{margin-bottom:0}
 }
+input#lim{width:84px;padding:9px;border-radius:10px;border:1px solid var(--track);background:var(--bg);color:var(--text);font-size:16px;font-weight:700;text-align:center}
+.trip{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--track);font-size:13px}
+.trip:first-child{border-top:0}
+.trip span{color:var(--mute);font-size:12px}
+.ta{display:flex;gap:6px;flex:none}
+.ta button{border:0;border-radius:8px;padding:7px 9px;background:var(--bg);color:var(--acc);font-weight:700;font-size:12px}
+.over #spd{color:var(--warn)}
+body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);pointer-events:none;animation:bl .5s infinite alternate}
+@keyframes bl{to{opacity:.15}}
+#alert.on{background:var(--warn);color:#fff}
 </style>
 </head>
 <body>
 <header>
-  <h1>Speedometer</h1>
+  <h1>Speedometer <small style="font-size:11px;color:var(--mute);font-weight:600">v2</small></h1>
   <span id="gps" class="pill">GPS off</span>
 </header>
 
@@ -116,8 +129,10 @@ select.btn{border:0;text-align:center;text-align-last:center}
     <div id="dbg"></div>
   </div>
   <div class="card wide"><div class="k">Speed history (last 2 min)</div><svg viewBox="0 0 300 50" preserveAspectRatio="none" style="width:100%;height:50px;margin-top:6px"><polyline id="line" fill="none" stroke="var(--acc)" stroke-width="2" points=""/></svg></div>
+  <div class="card wide"><div class="k">Speed alert</div><div style="display:flex;gap:8px;align-items:center;margin-top:8px"><input id="lim" type="number" inputmode="numeric" min="10" max="240" value="60"><span style="color:var(--mute);font-size:13px;flex:1">km/h limit</span><button class="btn sm" id="alert" style="flex:none;padding:9px 16px">Off</button></div></div>
   <div class="card"><div class="k">Heading</div><div class="v"><span class="arrow" id="arrow">▲</span> <span id="head">–</span></div></div>
   <div class="card"><div class="k">Map</div><div class="v" style="font-size:15px"><a id="maps" href="#" style="color:var(--acc);text-decoration:none">Open in Maps</a></div></div>
+  <div class="card wide"><div class="k">Trips (saved on this phone)</div><div id="tl" style="margin-top:6px"></div></div>
 </div>
 
 <div class="row">
@@ -136,7 +151,7 @@ select.btn{border:0;text-align:center;text-align-last:center}
 (function(){
   var $=function(id){return document.getElementById(id)};
   var MAXV=240;
-  var S={max:0,dist:0,moving:0,t0:0,last:null,watch:null,run:false,wake:null,demo:null,tick:null,v:0,hist:[],fixes:0,lastFix:0,raw:null,sim:false,view:'digital'};
+  var S={max:0,dist:0,moving:0,t0:0,last:null,watch:null,run:false,wake:null,demo:null,tick:null,v:0,hist:[],pts:[],ended:false,al:false,lim:60,lastBeep:0,lastPt:0,fixes:0,lastFix:0,raw:null,sim:false,view:'digital'};
   try{var sv=localStorage.getItem('view');if(sv==='analog'||sv==='digital')S.view=sv}catch(e){}
 
   function pt(r,a){var t=a*Math.PI/180;return [110+r*Math.sin(t),110-r*Math.cos(t)]}
@@ -178,6 +193,7 @@ select.btn{border:0;text-align:center;text-align-last:center}
     var avg=S.moving>0?S.dist/S.moving:0;
     $('avg').innerHTML=Math.round(avg*3.6)+' <small>km/h</small>';
     $('dist').innerHTML=(S.dist/1000).toFixed(2)+' <small>km</small>';
+    alertCheck(kmh);
   }
   function clock(){
     if(!S.run)return;
@@ -203,6 +219,7 @@ select.btn{border:0;text-align:center;text-align-last:center}
     S.v=v;
     S.hist.push(v);if(S.hist.length>120)S.hist.shift();spark();
     if(v>S.max)S.max=v;
+    if(S.run&&now-S.lastPt>=1000&&S.pts.length<20000){S.lastPt=now;S.pts.push([Math.round(now/1000),+c.latitude.toFixed(6),+c.longitude.toFixed(6),+(v*3.6).toFixed(1),c.altitude!=null?Math.round(c.altitude):'',Math.round(acc)])}
     if(S.last&&v>0&&acc<=40&&dt>0&&dt<10){
       var m=hav(S.last.la,S.last.lo,c.latitude,c.longitude);
       if(m/dt<80){S.dist+=m;S.moving+=dt}
@@ -237,6 +254,7 @@ select.btn{border:0;text-align:center;text-align-last:center}
   function start(){
     if(S.run)return;
     if(!navigator.geolocation){$('msg').textContent='This browser has no location support.';return}
+    if(S.ended){reset();S.ended=false}
     S.run=true;S.sim=false;S.t0=S.t0||Date.now();S.last=null;S.fixes=0;S.lastFix=0;
     $('go').textContent='Stop';$('go').className='btn stop';
     status('Acquiring GPS…','bad');
@@ -244,6 +262,7 @@ select.btn{border:0;text-align:center;text-align-last:center}
     startWatch();S.tick=setInterval(clock,500);lock();
   }
   function stop(keepMsg){
+    saveTrip();S.ended=true;
     S.run=false;S.sim=false;
     if(S.watch!=null&&navigator.geolocation)navigator.geolocation.clearWatch(S.watch);S.watch=null;
     if(S.demo){clearInterval(S.demo);S.demo=null}
@@ -256,6 +275,7 @@ select.btn{border:0;text-align:center;text-align-last:center}
     render();
   }
   function reset(){
+    saveTrip();S.pts=[];
     var was=S.run;S.max=0;S.dist=0;S.moving=0;S.last=null;S.hist=[];spark();S.t0=was?Date.now():0;
     $('time').textContent='00:00:00';render();
   }
@@ -267,6 +287,61 @@ select.btn{border:0;text-align:center;text-align-last:center}
     if(S.lastFix&&age>6){S.v=0;status('Signal lost','bad');render();if(age>20)startWatch()}
   },2000);
 
+  // ---- Trips, export, speed alert ----
+  var TK='speedo.trips',TH='speedo.alert',AC=null;
+  function loadTrips(){try{return JSON.parse(localStorage.getItem(TK)||'[]')}catch(e){return[]}}
+  function putTrips(a){for(;;){try{localStorage.setItem(TK,JSON.stringify(a));return}catch(e){if(a.length<=1)return;a.pop()}}}
+  function dur(s){s=Math.round(s);return pad(Math.floor(s/3600))+':'+pad(Math.floor(s/60)%60)+':'+pad(s%60)}
+  function saveTrip(){
+    if(S.pts.length<5||S.dist<50)return;
+    var a=loadTrips();
+    a.unshift({id:Date.now(),s:S.t0,e:Date.now(),d:Math.round(S.dist),mx:+(S.max*3.6).toFixed(1),mv:Math.round(S.moving),sim:S.sim,p:S.pts});
+    putTrips(a.slice(0,30));S.pts=[];renderTrips();
+  }
+  function renderTrips(){
+    var h='';
+    loadTrips().forEach(function(t){
+      var avg=t.mv>0?t.d/t.mv*3.6:0;
+      h+='<div class="trip"><div><b>'+new Date(t.s).toLocaleString([],{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+(t.sim?' (sim)':'')+'</b><br><span>'+(t.d/1000).toFixed(2)+' km · '+dur((t.e-t.s)/1000)+' · max '+Math.round(t.mx)+' · avg '+Math.round(avg)+' km/h</span></div><div class="ta"><button data-a="csv" data-id="'+t.id+'">CSV</button><button data-a="gpx" data-id="'+t.id+'">GPX</button><button data-a="del" data-id="'+t.id+'">✕</button></div></div>';
+    });
+    $('tl').innerHTML=h||'<span style="color:var(--mute);font-size:13px">No trips yet. A trip is saved when you tap Stop.</span>';
+  }
+  function out(name,text,type){
+    var f=new File([text],name,{type:type});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],title:name}).catch(function(){});return}
+    var a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=name;document.body.appendChild(a);a.click();a.remove();
+  }
+  function exportTrip(t,kind){
+    var nm='trip-'+new Date(t.s).toISOString().slice(0,16).replace(/[:T]/g,'-'),txt;
+    if(kind==='csv'){
+      txt='time_iso,lat,lon,speed_kmh,altitude_m,accuracy_m\n'+t.p.map(function(r){return new Date(r[0]*1000).toISOString()+','+r[1]+','+r[2]+','+r[3]+','+r[4]+','+r[5]}).join('\n');
+      out(nm+'.csv',txt,'text/csv');
+    }else{
+      txt='<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Speedometer" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>'+nm+'</name><trkseg>'+t.p.map(function(r){return '<trkpt lat="'+r[1]+'" lon="'+r[2]+'">'+(r[4]!==''?'<ele>'+r[4]+'</ele>':'')+'<time>'+new Date(r[0]*1000).toISOString()+'</time></trkpt>'}).join('')+'</trkseg></trk></gpx>';
+      out(nm+'.gpx',txt,'application/gpx+xml');
+    }
+  }
+  $('tl').onclick=function(e){
+    var b=e.target.closest('button');if(!b)return;
+    var id=+b.dataset.id,a=loadTrips(),t=a.filter(function(x){return x.id===id})[0];if(!t)return;
+    if(b.dataset.a==='del'){if(confirm('Delete this trip?')){putTrips(a.filter(function(x){return x.id!==id}));renderTrips()}}
+    else exportTrip(t,b.dataset.a);
+  };
+
+  try{var sa=JSON.parse(localStorage.getItem(TH)||'{}');if(sa.lim)S.lim=sa.lim;S.al=!!sa.on}catch(e){}
+  function saveAl(){try{localStorage.setItem(TH,JSON.stringify({lim:S.lim,on:S.al}))}catch(e){}}
+  function syncAl(){$('lim').value=S.lim;$('alert').textContent=S.al?'On':'Off';$('alert').classList.toggle('on',S.al)}
+  function beep(){
+    try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.resume)AC.resume();
+      var o=AC.createOscillator(),g=AC.createGain();o.frequency.value=880;g.gain.value=.15;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+.25)}catch(e){}
+  }
+  function alertCheck(kmh){
+    var over=S.al&&kmh>S.lim;document.body.classList.toggle('over',over);
+    if(over&&Date.now()-S.lastBeep>3000){S.lastBeep=Date.now();beep();try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}}
+  }
+  $('alert').onclick=function(){S.al=!S.al;if(S.al)beep();syncAl();saveAl();render()};
+  $('lim').oninput=function(){var n=parseInt(this.value,10);if(n>=10&&n<=240){S.lim=n;saveAl()}};
+
   $('go').onclick=function(){S.run?stop():start()};
   $('reset').onclick=reset;
   $('views').onclick=function(e){var b=e.target.closest('button');if(b)setView(b.dataset.v)};
@@ -277,6 +352,7 @@ select.btn{border:0;text-align:center;text-align-last:center}
   $('demo').onclick=function(){
     if(S.demo){stop();return}
     if(S.run)stop();
+    reset();S.ended=false;
     S.run=true;S.sim=true;S.t0=Date.now();S.last=null;S.fixes=0;
     $('go').textContent='Stop';$('go').className='btn stop';
     $('demo').textContent='Stop simulation';
@@ -296,7 +372,8 @@ select.btn{border:0;text-align:center;text-align-last:center}
 
   var framed=false;try{framed=window.self!==window.top}catch(e){framed=true}
   if(framed)$('frame').hidden=false;
-  setView(S.view);render();
+  if('serviceWorker' in navigator&&location.protocol==='https:'&&!framed)navigator.serviceWorker.register('sw.js').catch(function(){});
+  syncAl();renderTrips();setView(S.view);render();
 })();
 </script>
 </body>
