@@ -44,9 +44,21 @@ body.hud #dash{transform:scaleY(-1)}
 .v{font-size:clamp(22px,5.5vh,34px);font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .v small{font-size:12px;color:var(--mute);font-weight:600}
 .sub{font-size:12px;color:var(--mute);margin-top:2px;font-variant-numeric:tabular-nums}
-.tile.sign{height:clamp(84px,24vw,116px);padding:6px}
-.tile.sign svg{position:absolute;inset:6px;width:calc(100% - 12px);height:calc(100% - 12px)}
-.arrow{display:inline-block;transition:transform .3s;color:var(--acc)}
+.hrow{display:flex;align-items:center;gap:10px;margin-top:2px}
+.ring{height:clamp(40px,min(15vh,13vw),70px);aspect-ratio:1;flex:none}
+.hrow .v{font-size:clamp(18px,min(5.5vh,6vw),30px)}
+#ringg{transform-origin:50px 50px;transition:transform .4s linear}
+.tilt{flex-direction:row!important;align-items:center;gap:6px;padding-top:22px!important;cursor:pointer}
+.tilt .k{position:absolute;top:8px;left:12px}
+.tilt svg{flex:1;min-width:0;height:clamp(44px,13vh,64px)}
+.tx{flex:none;text-align:right;min-width:64px}
+.tilt .v{margin:0;font-size:clamp(22px,5.5vh,32px)}
+.tilt .sub{margin:0;font-size:11px}
+.cb{fill:rgba(46,230,166,.10);stroke:var(--text);stroke-width:2;stroke-linejoin:round}
+.tilt.warn .cb{stroke:var(--amb)}.tilt.bad .cb{stroke:var(--warn)}
+.cw{fill:#07090d;stroke:var(--text);stroke-width:2}
+.gl{stroke:#2a3644;stroke-width:2}
+.cg{transform-box:view-box;transition:transform .15s linear}
 #msg{flex:none;font-size:11px;color:var(--mute);text-align:center;height:15px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .bar{flex:none;display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-top:4px}
 .btn{border:0;border-radius:14px;padding:0 12px;height:50px;font-size:16px;font-weight:700;background:var(--card);color:var(--text);border:1px solid var(--line)}
@@ -59,7 +71,7 @@ select.btn{text-align:center;text-align-last:center}
 .screen h2{margin:0;font-size:18px}
 .sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex:none}
 .sb{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:grid;gap:10px;align-content:start;max-width:560px;width:100%;margin:0 auto}
-.sb .tile{padding:12px 14px}
+.sb{grid-auto-rows:max-content}.sb .tile{padding:12px 14px;min-height:max-content}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .row{display:flex;gap:10px;align-items:center;margin-top:8px}
 .seg{display:flex;background:var(--bg);border-radius:10px;padding:3px;flex:1}
@@ -79,7 +91,6 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   #dash{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"l g r"}
   .side{display:flex;flex-direction:column}
   .side .tile{flex:1}
-  .tile.sign{height:auto}
   .btn{height:44px}
   .bar{grid-template-columns:2fr 1fr 1fr;max-width:560px;width:100%;margin:2px auto 0}
 }
@@ -87,10 +98,10 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
 </head>
 <body>
 <header>
-  <h1>SPEEDO<small>v3</small></h1>
+  <h1>SPEEDO<small>v5</small></h1>
   <div class="lights">
     <span class="li" id="lgps"><i></i>GPS</span>
-    <span class="li" id="lalert"><i></i>LIMIT</span>
+    <span class="li" id="ltilt"><i></i>TILT</span>
     <span class="li" id="lrec"><i></i>REC</span>
   </div>
   <span id="gst">GPS off</span>
@@ -126,12 +137,16 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   </div>
 
   <div class="side l">
-    <div class="tile sign"><svg viewBox="0 0 100 100" aria-label="Speed limit"><circle cx="50" cy="50" r="48" fill="#e5252a"/><circle cx="50" cy="50" r="35" fill="#fff"/><text id="signtxt" x="50" y="50" text-anchor="middle" dominant-baseline="central" font-size="38" font-weight="800" style="fill:#111">--</text></svg></div>
-    <div class="tile"><div class="k">Trip</div><div class="v" id="dist">0.00 <small>km</small></div><div class="sub" id="time">00:00:00</div></div>
+    <div class="tile tilt" id="tp"><div class="k">Pitch</div>
+      <svg viewBox="0 0 120 60"><line class="gl" x1="6" y1="52" x2="114" y2="52"/><g class="cg" id="carp" style="transform-origin:60px 44px"><path class="cb" d="M14 42V34Q14 30 20 29L38 27L48 17Q50 15 54 15H80Q84 15 87 18L96 28L104 30Q108 31 108 36V42Z"/><circle class="cw" cx="34" cy="44" r="8"/><circle class="cw" cx="88" cy="44" r="8"/></g></svg>
+      <div class="tx"><div class="v" id="pv">--</div><div class="sub" id="pl">Tap to enable</div></div></div>
+    <div class="tile tilt" id="tr"><div class="k">Roll</div>
+      <svg viewBox="0 0 120 60"><line class="gl" x1="6" y1="52" x2="114" y2="52"/><g class="cg" id="carr" style="transform-origin:60px 45px"><path class="cb" d="M32 40V30Q32 26 36 25L42 14Q44 11 48 11H72Q76 11 78 14L84 25Q88 26 88 30V40Z"/><rect class="cw" x="30" y="38" width="10" height="14" rx="2"/><rect class="cw" x="80" y="38" width="10" height="14" rx="2"/></g></svg>
+      <div class="tx"><div class="v" id="rv">--</div><div class="sub" id="rl">Tap to enable</div></div></div>
   </div>
   <div class="side r">
-    <div class="tile"><div class="k">Heading</div><div class="v"><span class="arrow" id="arrow">▲</span> <span id="head">–</span></div></div>
-    <div class="tile"><div class="k">Altitude</div><div class="v" id="alt">– <small>m</small></div></div>
+    <div class="tile"><div class="k">Heading</div><div class="hrow"><svg class="ring" viewBox="0 0 100 100"><g id="ringg"><circle cx="50" cy="50" r="40" fill="none" stroke="#2a3644" stroke-width="2"/><g font-size="15" font-weight="700" text-anchor="middle" style="fill:var(--text)"><text x="50" y="30" style="fill:var(--warn)">N</text><text x="50" y="30" transform="rotate(90 50 50)">E</text><text x="50" y="30" transform="rotate(180 50 50)">S</text><text x="50" y="30" transform="rotate(270 50 50)">W</text></g></g><path d="M50 1L57 13H43Z" fill="var(--acc)"/></svg><div class="v" id="head">–</div></div></div>
+    <div class="tile"><div class="k">Trip</div><div class="v" id="dist">0.00 <small>km</small></div><div class="sub"><span id="time">00:00:00</span> · <span id="alt">–</span> m</div></div>
   </div>
 </div>
 
@@ -161,7 +176,20 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
     <div class="tile"><div class="k">Speed alert</div><div class="row"><input id="lim" type="number" inputmode="numeric" min="10" max="240" value="60"><span style="color:var(--mute);font-size:13px;flex:1">km/h limit</span><button class="btn sm" id="alert" style="padding:0 18px">Off</button></div></div>
     <div class="g2"><button class="btn sm" id="reset">Reset trip</button><button class="btn sm" id="hud">HUD mirror</button></div>
     <div class="tile"><div class="k">Simulation (no GPS)</div><div class="row"><select class="btn sm" id="scn" style="flex:1"><option value="city">City drive</option><option value="hwy">Highway</option><option value="jam">Stop and go</option></select><button class="btn sm" id="demo" style="flex:1">Run simulation</button></div></div>
+    <button class="btn sm" id="bcal">Calibrate level</button>
+    <button class="btn sm" id="bd">Debug logs</button>
     <div class="tile"><div class="k">Location</div><div class="v" id="coord" style="font-size:17px;white-space:normal">Waiting for GPS…</div><div class="sub" id="meta">Accuracy –</div><div id="dbg"></div><div style="margin-top:8px"><a id="maps" href="#" style="color:var(--acc);text-decoration:none;font-size:14px;font-weight:600">Open in Maps</a></div></div>
+  </div>
+</section>
+
+<section class="screen" id="scrDbg">
+  <div class="sh"><h2>Debug logs</h2><button class="btn sm" id="cd" style="height:38px">Close</button></div>
+  <div class="sb">
+    <div class="tile"><div class="k">Stored on this phone</div><div class="sub" id="dstat" style="font-size:13px">Loading…</div>
+      <label class="row" style="font-size:14px"><input type="checkbox" id="blur" checked style="width:20px;height:20px"> Blur coordinates (about 1 km) in view and export</label></div>
+    <div class="g2"><button class="btn main sm" id="dexp">Export file</button><button class="btn sm" id="dref">Refresh</button></div>
+    <button class="btn sm" id="dclr">Clear logs</button>
+    <pre id="dlog" style="margin:0;font-size:10.5px;line-height:1.35;white-space:pre-wrap;word-break:break-all;color:var(--mute);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px"></pre>
   </div>
 </section>
 
@@ -170,6 +198,52 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   var $=function(id){return document.getElementById(id)};
   var MAXV=240;
   var S={max:0,dist:0,moving:0,t0:0,last:null,watch:null,run:false,wake:null,demo:null,tick:null,v:0,hist:[],pts:[],ended:false,al:false,lim:60,lastBeep:0,lastPt:0,fixes:0,lastFix:0,raw:null,sim:false,view:'digital',over:false};
+  var VER='v5';
+  // ---- Logging: IndexedDB ring buffer ----
+  var LG={db:null,q:[],MAX:6000,fail:false};
+  function L(k,d){
+    LG.q.push({t:Date.now(),k:k,d:d===undefined?null:d});
+    if(LG.fail&&LG.q.length>1000)LG.q.shift();
+    if(LG.db&&LG.q.length>=20)flush();
+  }
+  function flush(){
+    if(!LG.db||!LG.q.length)return;
+    var b=LG.q.splice(0);
+    try{
+      var tx=LG.db.transaction('logs','readwrite'),st=tx.objectStore('logs');
+      b.forEach(function(e){st.add(e)});
+      st.count().onsuccess=function(){
+        var ex=this.result-LG.MAX;
+        if(ex>0)st.openCursor().onsuccess=function(){var c=this.result;if(c&&ex>0){c.delete();ex--;c.continue()}};
+      };
+    }catch(e){LG.q=b.concat(LG.q)}
+  }
+  function readLogs(cb){
+    flush();
+    if(!LG.db){cb(LG.q.slice());return}
+    try{var r=LG.db.transaction('logs').objectStore('logs').getAll();r.onsuccess=function(){cb(r.result)};r.onerror=function(){cb([])}}catch(e){cb([])}
+  }
+  try{
+    var rq=indexedDB.open('speedo-log',1);
+    rq.onupgradeneeded=function(){rq.result.createObjectStore('logs',{autoIncrement:true})};
+    rq.onsuccess=function(){LG.db=rq.result;flush()};
+    rq.onerror=function(){LG.fail=true};
+  }catch(e){LG.fail=true}
+  setInterval(flush,2000);
+  window.addEventListener('error',function(e){L('error',{type:'onerror',msg:String(e.message),src:String(e.filename||'').split('/').pop(),line:e.lineno,col:e.colno})});
+  window.addEventListener('unhandledrejection',function(e){L('error',{type:'rejection',msg:String(e.reason&&e.reason.message||e.reason)})});
+  document.addEventListener('visibilitychange',function(){L('vis',{hidden:document.hidden});if(document.hidden)flush()});
+  window.addEventListener('pagehide',flush);
+  window.addEventListener('online',function(){L('net',{online:true})});
+  window.addEventListener('offline',function(){L('net',{online:false})});
+  var rz=null;
+  function viewInfo(){return{vp:[innerWidth,innerHeight],orient:(screen.orientation&&screen.orientation.type)||(innerWidth>innerHeight?'landscape':'portrait')}}
+  window.addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(function(){L('view',viewInfo())},500)});
+  L('session',{ver:VER,ua:navigator.userAgent,vp:[innerWidth,innerHeight],scr:[screen.width,screen.height],dpr:window.devicePixelRatio,orient:viewInfo().orient,
+    standalone:!!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)),online:navigator.onLine,lang:navigator.language,tz:(Intl.DateTimeFormat().resolvedOptions().timeZone||''),
+    secure:window.isSecureContext,url:location.pathname});
+  try{navigator.permissions.query({name:'geolocation'}).then(function(p){L('perm',{state:p.state});p.onchange=function(){L('perm',{state:p.state})}}).catch(function(){})}catch(e){}
+  var lastSt='';
   try{var sv=localStorage.getItem('view');if(sv==='analog'||sv==='digital')S.view=sv}catch(e){}
 
   function pt(r,a){var t=a*Math.PI/180;return [120+r*Math.sin(t),110-r*Math.cos(t)]}
@@ -200,8 +274,17 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   function status(t,c){
     var st=c==='ok'?'ok':!c?'':/weak|Acquiring/i.test(t)?'warn blink':'bad';
     $('lgps').className='li '+st;$('gst').textContent=t;
+    if(t!==lastSt){lastSt=t;L('gps',{s:t})}
   }
 
+  var HC=null,HP=null;
+  function setHeading(h){
+    h=((h%360)+360)%360;
+    if(HP==null)HC=h;else HC+=((h-HP+540)%360)-180;   // unwrap so the ring never spins the long way round
+    HP=h;
+    $('ringg').style.transform='rotate('+(-HC)+'deg)';
+    $('head').textContent=Math.round(h)+'° '+dir(h);
+  }
   function spark(){
     var h=S.hist,m=Math.max(10,Math.max.apply(null,h.concat([0])));
     var pts=h.map(function(x,i){return (i/119*300).toFixed(1)+','+(48-x/m*46).toFixed(1)}).join(' ');
@@ -232,16 +315,18 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
     S.fixes++;S.lastFix=Date.now();S.raw=c.speed;
     var acc=c.accuracy;
     $('dbg').textContent='Fixes '+S.fixes+' · device speed '+(c.speed!=null&&!isNaN(c.speed)?(c.speed*3.6).toFixed(1)+' km/h':'not provided');
-    if(acc>100){status('GPS weak','bad');return}      // ignore very poor fixes
+    if(acc>100){L('fix',{rej:'weak',acc:Math.round(acc),sim:S.sim?1:0});status('GPS weak','bad');return}      // ignore very poor fixes
     var v=c.speed,dt=S.last?(now-S.last.t)/1000:0;
     if(v==null||isNaN(v)||v<0){                       // fall back to distance / time
       v=0;
       if(S.last&&acc<=50&&dt>0&&dt<10)v=hav(S.last.la,S.last.lo,c.latitude,c.longitude)/dt;
     }
-    if(v>70)return;                                   // reject spikes above 250 km/h
+    if(v>70){L('fix',{rej:'spike',v:+(v*3.6).toFixed(0),acc:Math.round(acc)});return}                                   // reject spikes above 250 km/h
     if(v<0.8)v=0;                                     // standing-still jitter
     if(v>0&&S.v>0)v=0.65*v+0.35*S.v;                  // light smoothing
     S.v=v;
+    if(dt>3)L('gap',{dt:+dt.toFixed(1)});
+    L('fix',{la:+c.latitude.toFixed(5),lo:+c.longitude.toFixed(5),alt:c.altitude!=null?Math.round(c.altitude):null,acc:+acc.toFixed(1),raw:c.speed!=null&&!isNaN(c.speed)?+(c.speed*3.6).toFixed(1):null,v:+(v*3.6).toFixed(1),dt:+dt.toFixed(1),hd:c.heading!=null&&!isNaN(c.heading)?Math.round(c.heading):null,tp:T.state==='ok'?+T.p.toFixed(1):null,tr:T.state==='ok'?+T.r.toFixed(1):null,sim:S.sim?1:0});
     S.hist.push(v);if(S.hist.length>120)S.hist.shift();spark();
     if(v>S.max)S.max=v;
     if(S.run&&now-S.lastPt>=1000&&S.pts.length<20000){S.lastPt=now;S.pts.push([Math.round(now/1000),+c.latitude.toFixed(6),+c.longitude.toFixed(6),+(v*3.6).toFixed(1),c.altitude!=null?Math.round(c.altitude):'',Math.round(acc)])}
@@ -252,31 +337,30 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
     S.last={la:c.latitude,lo:c.longitude,t:now};
     $('coord').textContent=c.latitude.toFixed(5)+'°, '+c.longitude.toFixed(5)+'°';
     $('meta').textContent='Altitude '+(c.altitude!=null?Math.round(c.altitude)+' m':'–')+' · Accuracy ±'+Math.round(acc)+' m';
-    $('alt').innerHTML=(c.altitude!=null?Math.round(c.altitude):'–')+' <small>m</small>';
+    $('alt').textContent=c.altitude!=null?Math.round(c.altitude):'–';
     $('maps').href='https://maps.apple.com/?ll='+c.latitude+','+c.longitude+'&q=My%20location';
-    if(c.heading!=null&&!isNaN(c.heading)&&v>0){
-      $('head').textContent=Math.round(c.heading)+'° '+dir(c.heading);
-      $('arrow').style.transform='rotate('+c.heading+'deg)';
-    }
+    if(c.heading!=null&&!isNaN(c.heading)&&c.heading>=0&&v>=1.4)setHeading(c.heading);   // GPS course is only valid while moving; hold last value when stopped
     status(acc<=15?'GPS strong':acc<=40?'GPS fair':'GPS weak',acc<=40?'ok':'bad');
     render();
   }
 
-  function startWatch(){
+  function startWatch(why){
+    L('watch',{start:why||'?'});
     if(S.watch!=null)navigator.geolocation.clearWatch(S.watch);
     S.watch=navigator.geolocation.watchPosition(onPos,onErr,{enableHighAccuracy:true,maximumAge:0,timeout:20000});
   }
   function onErr(e){
+    L('error',{type:'geo',code:e.code,msg:e.message});
     if(e.code===1){
       $('msg').textContent='Location is blocked. iPhone: Settings › Privacy › Location Services › Chrome › While Using, then reload.';
       status('Blocked','bad');stop(true);return;
     }
     status(e.code===3?'Acquiring GPS…':'No signal','bad');
     $('msg').textContent='Searching for GPS. Move near a window or outdoors with open sky.';
-    if(S.run&&!S.sim)setTimeout(function(){if(S.run&&!S.sim)startWatch()},1500);
+    if(S.run&&!S.sim)setTimeout(function(){if(S.run&&!S.sim)startWatch('retry')},1500);
   }
 
-  async function lock(){try{if('wakeLock' in navigator)S.wake=await navigator.wakeLock.request('screen')}catch(e){}}
+  async function lock(){try{if('wakeLock' in navigator){S.wake=await navigator.wakeLock.request('screen');L('wake',{ok:1})}else L('wake',{ok:0,why:'unsupported'})}catch(e){L('wake',{ok:0,why:String(e.name)})}}
   function start(){
     if(S.run)return;
     if(!navigator.geolocation){$('msg').textContent='This browser has no location support.';return}
@@ -285,15 +369,16 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
     $('go').textContent='Stop';$('go').className='btn stop';
     status('Acquiring GPS…','bad');
     $('msg').textContent='Tracking. Keep this screen on while driving.';
-    startWatch();S.tick=setInterval(clock,500);lock();render();
+    L('start',{sim:0});enableTilt();startWatch('start');S.tick=setInterval(clock,500);lock();render();
   }
   function stop(keepMsg){
+    L('stop',{dist:Math.round(S.dist),max:+(S.max*3.6).toFixed(0),fixes:S.fixes,sim:S.sim?1:0});
     saveTrip();S.ended=true;
     S.run=false;S.sim=false;
     if(S.watch!=null&&navigator.geolocation)navigator.geolocation.clearWatch(S.watch);S.watch=null;
     if(S.demo){clearInterval(S.demo);S.demo=null}
     $('demo').textContent='Run simulation';
-    clearInterval(S.tick);
+    clearInterval(S.tick);tiltOff();
     try{if(S.wake)S.wake.release()}catch(e){}
     S.v=0;
     $('go').textContent='Start';$('go').className='btn main';
@@ -310,7 +395,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   setInterval(function(){
     if(!S.run||S.sim)return;
     var age=S.lastFix?(Date.now()-S.lastFix)/1000:0;
-    if(S.lastFix&&age>6){S.v=0;status('Signal lost','bad');render();if(age>20)startWatch()}
+    if(S.lastFix&&age>6){S.v=0;status('Signal lost','bad');render();if(age>20){L('watch',{watchdog:Math.round(age)});startWatch('watchdog')}}
   },2000);
 
   // ---- Trips, export, speed alert ----
@@ -356,22 +441,135 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
 
   try{var sa=JSON.parse(localStorage.getItem(TH)||'{}');if(sa.lim)S.lim=sa.lim;S.al=!!sa.on}catch(e){}
   function saveAl(){try{localStorage.setItem(TH,JSON.stringify({lim:S.lim,on:S.al}))}catch(e){}}
-  function syncSign(){
-    var t=$('signtxt');t.textContent=S.al?S.lim:'--';
-    t.setAttribute('font-size',S.al&&S.lim>=100?30:38);
-  }
-  function syncAl(){$('lim').value=S.lim;$('alert').textContent=S.al?'On':'Off';$('alert').classList.toggle('on',S.al);syncSign()}
+  function syncAl(){$('lim').value=S.lim;$('alert').textContent=S.al?'On':'Off';$('alert').classList.toggle('on',S.al)}
   function beep(){
     try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.resume)AC.resume();
       var o=AC.createOscillator(),g=AC.createGain();o.frequency.value=880;g.gain.value=.15;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+.25)}catch(e){}
   }
   function alertCheck(kmh){
     var over=S.al&&kmh>S.lim;document.body.classList.toggle('over',over);
-    $('lalert').className='li '+(over?'bad blink':S.al?'warn':'');
+    if(over&&!S.over)L('alert',{kmh:Math.round(kmh),lim:S.lim});
+    S.over=over;
     if(over&&Date.now()-S.lastBeep>3000){S.lastBeep=Date.now();beep();try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}}
   }
   $('alert').onclick=function(){S.al=!S.al;if(S.al)beep();syncAl();saveAl();render()};
-  $('lim').oninput=function(){var n=parseInt(this.value,10);if(n>=10&&n<=240){S.lim=n;saveAl();syncSign()}};
+  $('lim').oninput=function(){var n=parseInt(this.value,10);if(n>=10&&n<=240){S.lim=n;saveAl()}};
+
+  // ---- Tilt (pitch / roll), calibrated to level ----
+  var T={state:'off',listening:false,u:null,su:null,cal:null,samples:[],t0:0,p:0,r:0,sp:0,sr:0};
+  var vd=function(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]};
+  var vn=function(a){var l=Math.sqrt(vd(a,a))||1;return [a[0]/l,a[1]/l,a[2]/l]};
+  var vx=function(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]};
+  function onOri(e){
+    if(e.beta==null||e.gamma==null)return;
+    var b=e.beta*Math.PI/180,g=e.gamma*Math.PI/180;
+    T.u=[-Math.cos(b)*Math.sin(g),Math.sin(b),Math.cos(b)*Math.cos(g)];   // world "up" in device axes
+  }
+  function tiltLight(){$('ltilt').className='li '+(S.sim||T.state==='ok'?'ok':T.state==='denied'?'bad':T.state==='cal'||T.state==='wait'?'warn blink':'')}
+  function listen(){
+    if(!T.listening){window.addEventListener('deviceorientation',onOri);T.listening=true}
+    if(T.state==='off'||T.state==='denied'||T.state==='none')T.state='wait';
+  }
+  function askTilt(){
+    var DO=window.DeviceOrientationEvent;
+    if(!DO){T.state='none';L('tilt',{state:'unsupported'});return Promise.resolve()}
+    if(typeof DO.requestPermission==='function'){
+      return DO.requestPermission().then(function(r){L('tilt',{perm:r});if(r==='granted')listen();else{T.state='denied';$('msg').textContent='Motion access denied. Reload the page and allow Motion & Orientation.'}}).catch(function(e){L('tilt',{permErr:String(e)});T.state='denied'});
+    }
+    listen();return Promise.resolve();
+  }
+  function calibrate(){
+    if(S.sim||T.state==='denied'||T.state==='none')return;
+    T.samples=[];T.t0=Date.now();T.cal=null;T.state='cal';
+    $('msg').textContent='Calibrating level… keep the car still.';
+  }
+  function finishCal(){
+    var a=[0,0,0];T.samples.forEach(function(u){a[0]+=u[0];a[1]+=u[1];a[2]+=u[2]});
+    var u0=vn(a),flat=Math.abs(u0[2])>0.8,f;
+    if(flat){var ang=(screen.orientation&&screen.orientation.angle!=null)?screen.orientation.angle:(window.orientation||0);ang=((ang%360)+360)%360;f=[[0,1,0],[1,0,0],[0,-1,0],[-1,0,0]][Math.round(ang/90)%4]}   // flat: top of screen points forward
+    else f=[0,0,-1];                                                                                                                                  // upright: screen faces driver, so forward is into the screen
+    var d=vd(f,u0);f=vn([f[0]-d*u0[0],f[1]-d*u0[1],f[2]-d*u0[2]]);
+    T.cal={u:u0,f:f,r:vx(f,u0)};T.state='ok';
+    L('tilt',{cal:u0.map(function(x){return +x.toFixed(3)}),mount:flat?'flat':'upright'});
+    $('msg').textContent='Level set. Tilt is live.';
+  }
+  function setCar(id,deg,pre){
+    $(id).style.transform='rotate('+deg.toFixed(1)+'deg)';
+  }
+  function tiltUI(){
+    var st=T.state,ok=S.sim||st==='ok',p=T.p,r=T.r;
+    if(S.sim){p=T.sp;r=T.sr}
+    tiltLight();
+    [['p',p,'Nose up','Nose down','carp',-1],['r',r,'Lean right','Lean left','carr',1]].forEach(function(x){
+      var el=$('t'+x[0]),a=x[1];
+      if(!ok){$(x[0]+'v').textContent='--';$(x[0]+'l').textContent=st==='cal'?'Calibrating…':st==='denied'?'Access denied':st==='none'?'No sensor':st==='wait'?'Starting…':'Tap to enable';el.className='tile tilt';setCar(x[4],0);return}
+      var m=Math.abs(a);
+      $(x[0]+'v').textContent=Math.round(m)+'°';
+      $(x[0]+'l').textContent=m<1.5?'Level':a>0?x[2]:x[3];
+      el.className='tile tilt'+(m>=30?' bad':m>=20?' warn':'');
+      setCar(x[4],Math.max(-60,Math.min(60,a))*x[5]);
+    });
+  }
+  setInterval(function(){
+    if(T.u){T.su=T.su?[T.su[0]+.35*(T.u[0]-T.su[0]),T.su[1]+.35*(T.u[1]-T.su[1]),T.su[2]+.35*(T.u[2]-T.su[2])]:T.u.slice()}
+    if(T.state==='wait'&&!T.u&&Date.now()-T.t0>4000&&T.t0){T.state='none';L('tilt',{state:'no events'})}
+    if(T.state==='cal'){
+      if(T.su)T.samples.push(T.su.slice());
+      var el=Date.now()-T.t0;
+      if(el>=1200&&T.samples.length>=5)finishCal();
+      else if(el>5000){T.state='none';L('tilt',{state:'calibration timeout'});$('msg').textContent='No tilt sensor data.'}
+    }
+    if(T.state==='ok'&&T.cal&&T.su){
+      var c=T.cal,cl=function(x){return Math.max(-1,Math.min(1,x))};
+      T.p=Math.asin(cl(vd(T.su,c.f)))*180/Math.PI;     // nose up = positive
+      T.r=-Math.asin(cl(vd(T.su,c.r)))*180/Math.PI;    // right side down = positive
+    }
+    tiltUI();
+  },100);
+  function tiltOff(){
+    if(T.listening){window.removeEventListener('deviceorientation',onOri);T.listening=false}
+    T.state='off';T.u=T.su=T.cal=null;
+  }
+  function enableTilt(){askTilt().then(calibrate)}
+  $('tp').onclick=$('tr').onclick=function(){if(!S.sim&&(T.state==='off'||T.state==='denied'||T.state==='none'))enableTilt()};
+  $('bcal').onclick=function(){closeScr('scrSet');enableTilt()};
+
+  // ---- Debug screen ----
+  var BK='speedo.blur';
+  try{if(localStorage.getItem(BK)==='0')$('blur').checked=false}catch(e){}
+  function bl(d,on){
+    if(!on||!d||typeof d!=='object')return d;
+    var o={};for(var k in d)o[k]=d[k];
+    ['la','lo','lat','lon'].forEach(function(f){if(typeof o[f]==='number')o[f]=+o[f].toFixed(2)});
+    return o;
+  }
+  function tm(t){var d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())+'.'+Math.floor(d.getMilliseconds()/100)}
+  function showLogs(){
+    var on=$('blur').checked;
+    readLogs(function(a){
+      var sz=a.length?Math.round(JSON.stringify(a).length/1024):0;
+      $('dstat').textContent=a.length+' entries (~'+sz+' KB, keeps the newest '+LG.MAX+')'+(LG.fail?' · IndexedDB unavailable, memory only':'');
+      $('dlog').textContent=a.slice(-120).reverse().map(function(e){var s=JSON.stringify(bl(e.d,on));return tm(e.t)+' '+e.k+' '+(s.length>170?s.slice(0,170)+'…':s)}).join('\n')||'No entries yet.';
+    });
+  }
+  $('bd').onclick=function(){openScr('scrDbg');showLogs()};
+  $('cd').onclick=function(){closeScr('scrDbg')};
+  $('dref').onclick=showLogs;
+  $('blur').onchange=function(){try{localStorage.setItem(BK,this.checked?'1':'0')}catch(e){}showLogs()};
+  $('dclr').onclick=function(){
+    if(!confirm('Clear all debug logs?'))return;
+    LG.q=[];
+    try{if(LG.db)LG.db.transaction('logs','readwrite').objectStore('logs').clear().onsuccess=showLogs;else showLogs()}catch(e){showLogs()}
+  };
+  $('dexp').onclick=function(){
+    var on=$('blur').checked;
+    readLogs(function(a){
+      var meta={app:'speedo',version:VER,exported:new Date().toISOString(),coordinatesBlurred:on,count:a.length};
+      var txt='{"meta":'+JSON.stringify(meta)+',"entries":[\n'+a.map(function(e){return JSON.stringify({t:new Date(e.t).toISOString(),k:e.k,d:bl(e.d,on)})}).join(',\n')+'\n]}';
+      out('speedo-log-'+new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')+'.json',txt,'application/json');
+      L('export',{n:a.length,blurred:on});
+    });
+  };
 
   function openScr(id){$(id).classList.add('open')}
   function closeScr(id){$(id).classList.remove('open')}
@@ -385,13 +583,13 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   $('views').onclick=function(e){var b=e.target.closest('button');if(b)setView(b.dataset.v)};
   $('hud').onclick=function(){document.body.classList.toggle('hud')};
   $('full').onclick=function(e){e.preventDefault();window.open(location.href,'_blank')};
-  document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.run){lock();if(!S.sim)startWatch()}});
+  document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.run){lock();if(!S.sim)startWatch('visible')}});
 
   $('demo').onclick=function(){
     if(S.demo){stop();return}
     if(S.run)stop();
     reset();S.ended=false;
-    S.run=true;S.sim=true;S.t0=Date.now();S.last=null;S.fixes=0;
+    S.run=true;S.sim=true;S.t0=Date.now();S.last=null;S.fixes=0;L('start',{sim:1,scn:$('scn').value});
     $('go').textContent='Stop';$('go').className='btn stop';
     $('demo').textContent='Stop simulation';
     $('msg').textContent='Simulated drive: no GPS is used.';
@@ -403,7 +601,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
       n++;
       if(n%(P.stops?7:12)===0){tgt=(P.stops&&Math.random()<0.3)?0:P.vmax*(0.45+Math.random()*0.55)}
       sp=sp<tgt?Math.min(tgt,sp+P.acc):Math.max(tgt,sp-P.dec);
-      hd=(hd+(Math.random()*2-1)*P.turn+360)%360;
+      hd=(hd+(Math.random()*2-1)*P.turn+360)%360;T.sp=14*Math.sin(n/9);T.sr=10*Math.sin(n/6+1);
       la+=sp*Math.cos(hd*r)/111320;lo+=sp*Math.sin(hd*r)/(111320*Math.cos(la*r));
       onPos({timestamp:Date.now(),coords:{latitude:la,longitude:lo,speed:sp,heading:hd,altitude:900+30*Math.sin(n/25),accuracy:5+Math.random()*4}});
     },1000);
@@ -411,7 +609,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
 
   var framed=false;try{framed=window.self!==window.top}catch(e){framed=true}
   if(framed)$('frame').hidden=false;
-  if('serviceWorker' in navigator&&location.protocol==='https:'&&!framed)navigator.serviceWorker.register('sw.js').catch(function(){});
+  if('serviceWorker' in navigator&&location.protocol==='https:'&&!framed)navigator.serviceWorker.register('sw.js').then(function(){L('sw',{ok:1})}).catch(function(e){L('sw',{ok:0,msg:String(e)})});
   syncAl();renderTrips();setView(S.view);render();
 })();
 </script>
