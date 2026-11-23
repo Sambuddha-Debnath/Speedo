@@ -30,7 +30,10 @@ h1 small{font-size:11px;color:var(--mute);font-weight:600;margin-left:4px}
 .note[hidden]{display:none}.note a{color:var(--acc)}
 #dash{flex:1;min-height:0;display:grid;gap:10px;margin:6px 0;grid-template-rows:minmax(0,1fr) auto auto;grid-template-areas:"g" "l" "r"}
 body.hud #dash{transform:scaleY(-1)}
-.gauge{grid-area:g;min-height:0;display:flex}
+.gauge{grid-area:g;min-height:0;display:flex;position:relative}
+.gauge .prof{position:absolute;left:0;bottom:0;width:100%;height:42%;pointer-events:none}
+.gs{position:relative;z-index:1}
+.elev{position:absolute;left:0;right:0;bottom:2px;text-align:center;font-size:11px;color:var(--mute);z-index:2;font-variant-numeric:tabular-nums;pointer-events:none}
 .gauge svg{width:100%;height:100%}
 .gauge.digital #ana,.gauge.analog #dig{display:none}
 .gauge text{font-variant-numeric:tabular-nums;fill:var(--text)}
@@ -60,7 +63,8 @@ body.hud #dash{transform:scaleY(-1)}
 .gl{stroke:#2a3644;stroke-width:2}
 .cg{transform-box:view-box;transition:transform .15s linear}
 #msg{flex:none;font-size:11px;color:var(--mute);text-align:center;height:15px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.bar{flex:none;display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-top:4px}
+.bar{flex:none;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:8px;margin-top:4px}
+.bar .btn{font-size:14px;padding:0 4px}.bar .btn.main{font-size:16px}
 .btn{border:0;border-radius:14px;padding:0 12px;height:50px;font-size:16px;font-weight:700;background:var(--card);color:var(--text);border:1px solid var(--line)}
 .btn.main{background:var(--acc);color:#04170f;border-color:var(--acc);box-shadow:0 0 14px rgba(46,230,166,.35)}
 .btn.stop{background:var(--warn);color:#fff;border-color:var(--warn);box-shadow:0 0 14px rgba(255,77,77,.4)}
@@ -92,13 +96,13 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   .side{display:flex;flex-direction:column}
   .side .tile{flex:1}
   .btn{height:44px}
-  .bar{grid-template-columns:2fr 1fr 1fr;max-width:560px;width:100%;margin:2px auto 0}
+  .bar{grid-template-columns:1.6fr 1fr 1fr 1fr;max-width:620px;width:100%;margin:2px auto 0}
 }
 </style>
 </head>
 <body>
 <header>
-  <h1>SPEEDO<small>v5</small></h1>
+  <h1>SPEEDO<small>v6</small></h1>
   <div class="lights">
     <span class="li" id="lgps"><i></i>GPS</span>
     <span class="li" id="ltilt"><i></i>TILT</span>
@@ -111,7 +115,8 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
 
 <div id="dash">
   <div class="gauge digital" id="gauge">
-    <svg viewBox="0 5 240 210" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <svg class="prof" viewBox="0 0 300 100" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2ee6a6" stop-opacity=".30"/><stop offset="1" stop-color="#2ee6a6" stop-opacity="0"/></linearGradient></defs><path id="pf" fill="url(#pg)"/><path id="pl2" fill="none" stroke="#2ee6a6" stroke-opacity=".55" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linecap="round"/><path id="pd" fill="none" stroke="#2ee6a6" stroke-width="7" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg>
+    <svg class="gs" viewBox="0 5 240 210" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
       <defs><radialGradient id="face" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#151d28"/><stop offset="1" stop-color="#07090d"/></radialGradient></defs>
       <g id="dig">
         <g transform="rotate(135 120 110)" fill="none" stroke-width="13">
@@ -134,6 +139,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
         <circle cx="120" cy="110" r="8" fill="#10161e" stroke="var(--warn)" stroke-width="2"/>
       </g>
     </svg>
+    <div class="elev"><span id="altv">–</span> m · <span id="grade">–</span></div>
   </div>
 
   <div class="side l">
@@ -146,13 +152,14 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   </div>
   <div class="side r">
     <div class="tile"><div class="k">Heading</div><div class="hrow"><svg class="ring" viewBox="0 0 100 100"><g id="ringg"><circle cx="50" cy="50" r="40" fill="none" stroke="#2a3644" stroke-width="2"/><g font-size="15" font-weight="700" text-anchor="middle" style="fill:var(--text)"><text x="50" y="30" style="fill:var(--warn)">N</text><text x="50" y="30" transform="rotate(90 50 50)">E</text><text x="50" y="30" transform="rotate(180 50 50)">S</text><text x="50" y="30" transform="rotate(270 50 50)">W</text></g></g><path d="M50 1L57 13H43Z" fill="var(--acc)"/></svg><div class="v" id="head">–</div></div></div>
-    <div class="tile"><div class="k">Trip</div><div class="v" id="dist">0.00 <small>km</small></div><div class="sub"><span id="time">00:00:00</span> · <span id="alt">–</span> m</div></div>
+    <div class="tile"><div class="k">Trip</div><div class="v" id="dist">0.00 <small>km</small></div><div class="sub" id="time">00:00:00</div></div>
   </div>
 </div>
 
 <div id="msg">Tap Start and allow location access.</div>
 <div class="bar">
   <button class="btn main" id="go">Start</button>
+  <button class="btn" id="lvl">Level</button>
   <button class="btn" id="bt">Trips</button>
   <button class="btn" id="bs">Settings</button>
 </div>
@@ -198,7 +205,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   var $=function(id){return document.getElementById(id)};
   var MAXV=240;
   var S={max:0,dist:0,moving:0,t0:0,last:null,watch:null,run:false,wake:null,demo:null,tick:null,v:0,hist:[],pts:[],ended:false,al:false,lim:60,lastBeep:0,lastPt:0,fixes:0,lastFix:0,raw:null,sim:false,view:'digital',over:false};
-  var VER='v5';
+  var VER='v6';
   // ---- Logging: IndexedDB ring buffer ----
   var LG={db:null,q:[],MAX:6000,fail:false};
   function L(k,d){
@@ -326,7 +333,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
     if(v>0&&S.v>0)v=0.65*v+0.35*S.v;                  // light smoothing
     S.v=v;
     if(dt>3)L('gap',{dt:+dt.toFixed(1)});
-    L('fix',{la:+c.latitude.toFixed(5),lo:+c.longitude.toFixed(5),alt:c.altitude!=null?Math.round(c.altitude):null,acc:+acc.toFixed(1),raw:c.speed!=null&&!isNaN(c.speed)?+(c.speed*3.6).toFixed(1):null,v:+(v*3.6).toFixed(1),dt:+dt.toFixed(1),hd:c.heading!=null&&!isNaN(c.heading)?Math.round(c.heading):null,tp:T.state==='ok'?+T.p.toFixed(1):null,tr:T.state==='ok'?+T.r.toFixed(1):null,sim:S.sim?1:0});
+    L('fix',{la:+c.latitude.toFixed(5),lo:+c.longitude.toFixed(5),alt:c.altitude!=null?Math.round(c.altitude):null,acc:+acc.toFixed(1),raw:c.speed!=null&&!isNaN(c.speed)?+(c.speed*3.6).toFixed(1):null,v:+(v*3.6).toFixed(1),dt:+dt.toFixed(1),hd:c.heading!=null&&!isNaN(c.heading)?Math.round(c.heading):null,as:E.sm!=null?+E.sm.toFixed(1):null,gr:E.gr!=null?+E.gr.toFixed(1):null,tp:T.state==='ok'?+T.p.toFixed(1):null,tr:T.state==='ok'?+T.r.toFixed(1):null,sim:S.sim?1:0});
     S.hist.push(v);if(S.hist.length>120)S.hist.shift();spark();
     if(v>S.max)S.max=v;
     if(S.run&&now-S.lastPt>=1000&&S.pts.length<20000){S.lastPt=now;S.pts.push([Math.round(now/1000),+c.latitude.toFixed(6),+c.longitude.toFixed(6),+(v*3.6).toFixed(1),c.altitude!=null?Math.round(c.altitude):'',Math.round(acc)])}
@@ -337,7 +344,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
     S.last={la:c.latitude,lo:c.longitude,t:now};
     $('coord').textContent=c.latitude.toFixed(5)+'°, '+c.longitude.toFixed(5)+'°';
     $('meta').textContent='Altitude '+(c.altitude!=null?Math.round(c.altitude)+' m':'–')+' · Accuracy ±'+Math.round(acc)+' m';
-    $('alt').textContent=c.altitude!=null?Math.round(c.altitude):'–';
+    elevAdd(c.altitude,c.altitudeAccuracy,now);elevUpdate();
     $('maps').href='https://maps.apple.com/?ll='+c.latitude+','+c.longitude+'&q=My%20location';
     if(c.heading!=null&&!isNaN(c.heading)&&c.heading>=0&&v>=1.4)setHeading(c.heading);   // GPS course is only valid while moving; hold last value when stopped
     status(acc<=15?'GPS strong':acc<=40?'GPS fair':'GPS weak',acc<=40?'ok':'bad');
@@ -387,6 +394,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   }
   function reset(){
     saveTrip();S.pts=[];
+    E.s=[];E.gr=null;drawElev();
     var was=S.run;S.max=0;S.dist=0;S.moving=0;S.last=null;S.hist=[];spark();S.t0=was?Date.now():0;
     $('time').textContent='00:00:00';render();
   }
@@ -454,6 +462,45 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   }
   $('alert').onclick=function(){S.al=!S.al;if(S.al)beep();syncAl();saveAl();render()};
   $('lim').oninput=function(){var n=parseInt(this.value,10);if(n>=10&&n<=240){S.lim=n;saveAl()}};
+
+  // ---- Elevation profile (smoothed GPS altitude, scrolling by distance) ----
+  var E={s:[],raw:[],sm:null,t:0,gr:null,W:1500};
+  function elevAdd(alt,acc,now){
+    if(alt==null||isNaN(alt)||(acc!=null&&acc>50))return;
+    E.raw.push(alt);if(E.raw.length>5)E.raw.shift();
+    var m=E.raw.slice().sort(function(a,b){return a-b})[E.raw.length>>1];      // median of last 5 removes spikes
+    if(E.sm==null)E.sm=m;else E.sm+=(m-E.sm)*(1-Math.exp(-Math.max(.2,Math.min(5,(now-E.t)/1000))/6));  // then ~6 s low-pass
+    E.t=now;
+  }
+  function elevUpdate(){
+    if(E.sm==null)return;
+    var D=S.dist,last=E.s[E.s.length-1],ref=null,i;
+    if(!last||D-last.d>=10){E.s.push({d:D,a:E.sm});if(E.s.length>400)E.s.shift()}   // one sample per 10 m
+    for(i=E.s.length-1;i>=0;i--)if(D-E.s[i].d>=100){ref=E.s[i];break}
+    if(!ref&&E.s.length&&D-E.s[0].d>=50)ref=E.s[0];
+    if(ref){var g=Math.max(-40,Math.min(40,(E.sm-ref.a)/(D-ref.d)*100));E.gr=E.gr==null?g:E.gr+.3*(g-E.gr)}
+    drawElev();
+  }
+  function bez(q){
+    var d='M'+q[0][0].toFixed(1)+' '+q[0][1].toFixed(1);
+    for(var i=0;i<q.length-1;i++){var a=q[i-1]||q[i],b=q[i],c=q[i+1],e=q[i+2]||c;
+      d+='C'+(b[0]+(c[0]-a[0])/6).toFixed(1)+' '+(b[1]+(c[1]-a[1])/6).toFixed(1)+' '+(c[0]-(e[0]-b[0])/6).toFixed(1)+' '+(c[1]-(e[1]-b[1])/6).toFixed(1)+' '+c[0].toFixed(1)+' '+c[1].toFixed(1)}
+    return d;
+  }
+  function drawElev(){
+    if(E.sm==null){return}
+    $('altv').textContent=Math.round(E.sm);
+    $('grade').textContent=E.gr==null?'–':(E.gr>=.05?'▲ ':E.gr<=-.05?'▼ ':'')+Math.abs(E.gr).toFixed(1)+'%';
+    var D=S.dist,pts=E.s.filter(function(p){return p.d>=D-E.W-30}).concat([{d:D,a:E.sm}]);
+    if(E.s.length<2||pts.length<2){$('pf').setAttribute('d','');$('pl2').setAttribute('d','');$('pd').setAttribute('d','');return}
+    var lo=1e9,hi=-1e9;pts.forEach(function(p){lo=Math.min(lo,p.a);hi=Math.max(hi,p.a)});
+    var rg=Math.max(hi-lo,15);lo=(hi+lo)/2-rg/2;                              // flat roads stay flat (min 15 m range)
+    var q=pts.map(function(p){return [264-(D-p.d)/E.W*264,92-(p.a-lo)/rg*74]});
+    var d=bez(q),l=q[q.length-1],f=q[0];
+    $('pl2').setAttribute('d',d);
+    $('pf').setAttribute('d',d+'L'+l[0].toFixed(1)+' 100L'+f[0].toFixed(1)+' 100Z');
+    $('pd').setAttribute('d','M'+l[0].toFixed(1)+' '+l[1].toFixed(1)+'L'+l[0].toFixed(1)+' '+l[1].toFixed(1));
+  }
 
   // ---- Tilt (pitch / roll), calibrated to level ----
   var T={state:'off',listening:false,u:null,su:null,cal:null,samples:[],t0:0,p:0,r:0,sp:0,sr:0};
@@ -532,6 +579,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   }
   function enableTilt(){askTilt().then(calibrate)}
   $('tp').onclick=$('tr').onclick=function(){if(!S.sim&&(T.state==='off'||T.state==='denied'||T.state==='none'))enableTilt()};
+  $('lvl').onclick=function(){if(S.sim){$('msg').textContent='Level is not used in simulation.';return}enableTilt()};
   $('bcal').onclick=function(){closeScr('scrSet');enableTilt()};
 
   // ---- Debug screen ----
@@ -603,7 +651,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
       sp=sp<tgt?Math.min(tgt,sp+P.acc):Math.max(tgt,sp-P.dec);
       hd=(hd+(Math.random()*2-1)*P.turn+360)%360;T.sp=14*Math.sin(n/9);T.sr=10*Math.sin(n/6+1);
       la+=sp*Math.cos(hd*r)/111320;lo+=sp*Math.sin(hd*r)/(111320*Math.cos(la*r));
-      onPos({timestamp:Date.now(),coords:{latitude:la,longitude:lo,speed:sp,heading:hd,altitude:900+30*Math.sin(n/25),accuracy:5+Math.random()*4}});
+      onPos({timestamp:Date.now(),coords:{latitude:la,longitude:lo,speed:sp,heading:hd,altitude:900+30*Math.sin(n/25)+12*Math.sin(n/8),accuracy:5+Math.random()*4}});
     },1000);
   };
 
