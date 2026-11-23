@@ -33,6 +33,11 @@ body.hud #dash{transform:scaleY(-1)}
 .gauge{grid-area:g;min-height:0;display:flex;position:relative}
 .gauge .prof{position:absolute;left:0;bottom:0;width:100%;height:42%;pointer-events:none}
 .gs{position:relative;z-index:1}
+.sign{position:absolute;top:2px;right:2px;width:clamp(44px,8.5vh,52px);aspect-ratio:1;z-index:3}
+.sign.dim{opacity:.3}.sign.man{opacity:.7}
+.cam{position:absolute;top:2px;left:50%;transform:translateX(-50%);z-index:3;background:#2a1a00;color:var(--amb);border:1px solid var(--amb);border-radius:12px;padding:4px 10px;font-weight:700;font-size:14px;white-space:nowrap}
+.cam[hidden]{display:none}
+.btn.tg.on{border-color:var(--acc);color:var(--acc)}
 .elev{position:absolute;left:0;right:0;bottom:2px;text-align:center;font-size:11px;color:var(--mute);z-index:2;font-variant-numeric:tabular-nums;pointer-events:none}
 .gauge svg{width:100%;height:100%}
 .gauge.digital #ana,.gauge.analog #dig{display:none}
@@ -81,6 +86,7 @@ select.btn{text-align:center;text-align-last:center}
 .seg{display:flex;background:var(--bg);border-radius:10px;padding:3px;flex:1}
 .seg button{flex:1;border:0;background:none;color:var(--mute);padding:8px 12px;border-radius:8px;font-weight:600;font-size:13px}
 .seg button.on{background:var(--acc);color:#04170f}
+input.txt{width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:16px}
 input#lim{width:84px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:16px;font-weight:700;text-align:center}
 #alert.on{background:var(--warn);color:#fff}
 .trip{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
@@ -102,7 +108,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
 </head>
 <body>
 <header>
-  <h1>SPEEDO<small>v6</small></h1>
+  <h1>SPEEDO<small>v7</small></h1>
   <div class="lights">
     <span class="li" id="lgps"><i></i>GPS</span>
     <span class="li" id="ltilt"><i></i>TILT</span>
@@ -139,6 +145,8 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
         <circle cx="120" cy="110" r="8" fill="#10161e" stroke="var(--warn)" stroke-width="2"/>
       </g>
     </svg>
+    <div class="sign dim" id="sign" title="Speed limit"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#e5252a"/><circle cx="50" cy="50" r="35" fill="#fff"/><text id="signtxt" x="50" y="50" text-anchor="middle" dominant-baseline="central" font-size="38" font-weight="800" style="fill:#111">--</text></svg></div>
+    <div class="cam" id="cam" hidden></div>
     <div class="elev"><span id="altv">–</span> m · <span id="grade">–</span></div>
   </div>
 
@@ -181,6 +189,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   <div class="sb">
     <div class="tile"><div class="k">Gauge style</div><div class="row"><div class="seg" id="views"><button data-v="digital" class="on">Digital</button><button data-v="analog">Analog</button></div></div></div>
     <div class="tile"><div class="k">Speed alert</div><div class="row"><input id="lim" type="number" inputmode="numeric" min="10" max="240" value="60"><span style="color:var(--mute);font-size:13px;flex:1">km/h limit</span><button class="btn sm" id="alert" style="padding:0 18px">Off</button></div></div>
+    <div class="g2"><button class="btn sm tg" id="bosm">OSM limits</button><button class="btn sm tg" id="bcam">Camera alerts</button></div>
     <div class="g2"><button class="btn sm" id="reset">Reset trip</button><button class="btn sm" id="hud">HUD mirror</button></div>
     <div class="tile"><div class="k">Simulation (no GPS)</div><div class="row"><select class="btn sm" id="scn" style="flex:1"><option value="city">City drive</option><option value="hwy">Highway</option><option value="jam">Stop and go</option></select><button class="btn sm" id="demo" style="flex:1">Run simulation</button></div></div>
     <button class="btn sm" id="bcal">Calibrate level</button>
@@ -196,6 +205,14 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
       <label class="row" style="font-size:14px"><input type="checkbox" id="blur" checked style="width:20px;height:20px"> Blur coordinates (about 1 km) in view and export</label></div>
     <div class="g2"><button class="btn main sm" id="dexp">Export file</button><button class="btn sm" id="dref">Refresh</button></div>
     <button class="btn sm" id="dclr">Clear logs</button>
+    <div class="tile"><div class="k">Send logs to GitHub</div>
+      <input class="txt" id="ghrepo" placeholder="owner/repo" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <input class="txt" id="ghbr" placeholder="branch (blank = default branch)" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <input class="txt" id="ghtok" type="password" placeholder="Fine-grained token" autocomplete="off">
+      <label class="row" style="font-size:14px"><input type="checkbox" id="ghauto" checked style="width:20px;height:20px"> Send automatically (on Stop, errors, every 10 min)</label>
+      <div class="g2" style="margin-top:8px"><button class="btn sm" id="ghsave">Save &amp; test</button><button class="btn sm" id="ghsend">Send now</button></div>
+      <button class="btn sm" id="ghdel" style="margin-top:8px;width:100%">Remove token</button>
+      <div class="sub" id="upst" style="font-size:12px;margin-top:6px"></div></div>
     <pre id="dlog" style="margin:0;font-size:10.5px;line-height:1.35;white-space:pre-wrap;word-break:break-all;color:var(--mute);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px"></pre>
   </div>
 </section>
@@ -205,10 +222,11 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   var $=function(id){return document.getElementById(id)};
   var MAXV=240;
   var S={max:0,dist:0,moving:0,t0:0,last:null,watch:null,run:false,wake:null,demo:null,tick:null,v:0,hist:[],pts:[],ended:false,al:false,lim:60,lastBeep:0,lastPt:0,fixes:0,lastFix:0,raw:null,sim:false,view:'digital',over:false};
-  var VER='v6';
+  var VER='v7';
   // ---- Logging: IndexedDB ring buffer ----
   var LG={db:null,q:[],MAX:6000,fail:false};
   function L(k,d){
+    if(k==='error')upSoon(20000,'error');
     LG.q.push({t:Date.now(),k:k,d:d===undefined?null:d});
     if(LG.fail&&LG.q.length>1000)LG.q.shift();
     if(LG.db&&LG.q.length>=20)flush();
@@ -239,9 +257,9 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   setInterval(flush,2000);
   window.addEventListener('error',function(e){L('error',{type:'onerror',msg:String(e.message),src:String(e.filename||'').split('/').pop(),line:e.lineno,col:e.colno})});
   window.addEventListener('unhandledrejection',function(e){L('error',{type:'rejection',msg:String(e.reason&&e.reason.message||e.reason)})});
-  document.addEventListener('visibilitychange',function(){L('vis',{hidden:document.hidden});if(document.hidden)flush()});
+  document.addEventListener('visibilitychange',function(){L('vis',{hidden:document.hidden});if(document.hidden){flush();upSoon(0,'hidden')}});
   window.addEventListener('pagehide',flush);
-  window.addEventListener('online',function(){L('net',{online:true})});
+  window.addEventListener('online',function(){L('net',{online:true});upSoon(3000,'online')});
   window.addEventListener('offline',function(){L('net',{online:false})});
   var rz=null;
   function viewInfo(){return{vp:[innerWidth,innerHeight],orient:(screen.orientation&&screen.orientation.type)||(innerWidth>innerHeight?'landscape':'portrait')}}
@@ -333,7 +351,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
     if(v>0&&S.v>0)v=0.65*v+0.35*S.v;                  // light smoothing
     S.v=v;
     if(dt>3)L('gap',{dt:+dt.toFixed(1)});
-    L('fix',{la:+c.latitude.toFixed(5),lo:+c.longitude.toFixed(5),alt:c.altitude!=null?Math.round(c.altitude):null,acc:+acc.toFixed(1),raw:c.speed!=null&&!isNaN(c.speed)?+(c.speed*3.6).toFixed(1):null,v:+(v*3.6).toFixed(1),dt:+dt.toFixed(1),hd:c.heading!=null&&!isNaN(c.heading)?Math.round(c.heading):null,as:E.sm!=null?+E.sm.toFixed(1):null,gr:E.gr!=null?+E.gr.toFixed(1):null,tp:T.state==='ok'?+T.p.toFixed(1):null,tr:T.state==='ok'?+T.r.toFixed(1):null,sim:S.sim?1:0});
+    L('fix',{la:+c.latitude.toFixed(5),lo:+c.longitude.toFixed(5),alt:c.altitude!=null?Math.round(c.altitude):null,acc:+acc.toFixed(1),raw:c.speed!=null&&!isNaN(c.speed)?+(c.speed*3.6).toFixed(1):null,v:+(v*3.6).toFixed(1),dt:+dt.toFixed(1),hd:c.heading!=null&&!isNaN(c.heading)?Math.round(c.heading):null,lm:LIM.v,as:E.sm!=null?+E.sm.toFixed(1):null,gr:E.gr!=null?+E.gr.toFixed(1):null,tp:T.state==='ok'?+T.p.toFixed(1):null,tr:T.state==='ok'?+T.r.toFixed(1):null,sim:S.sim?1:0});
     S.hist.push(v);if(S.hist.length>120)S.hist.shift();spark();
     if(v>S.max)S.max=v;
     if(S.run&&now-S.lastPt>=1000&&S.pts.length<20000){S.lastPt=now;S.pts.push([Math.round(now/1000),+c.latitude.toFixed(6),+c.longitude.toFixed(6),+(v*3.6).toFixed(1),c.altitude!=null?Math.round(c.altitude):'',Math.round(acc)])}
@@ -341,12 +359,14 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
       var m=hav(S.last.la,S.last.lo,c.latitude,c.longitude);
       if(m/dt<80){S.dist+=m;S.moving+=dt}
     }
+    if(S.last&&acc<=40&&hav(S.last.la,S.last.lo,c.latitude,c.longitude)>=8){S.course=brg(S.last.la,S.last.lo,c.latitude,c.longitude);S.courseT=now}   // course from successive fixes, used when the device gives none
     S.last={la:c.latitude,lo:c.longitude,t:now};
     $('coord').textContent=c.latitude.toFixed(5)+'°, '+c.longitude.toFixed(5)+'°';
     $('meta').textContent='Altitude '+(c.altitude!=null?Math.round(c.altitude)+' m':'–')+' · Accuracy ±'+Math.round(acc)+' m';
     elevAdd(c.altitude,c.altitudeAccuracy,now);elevUpdate();
     $('maps').href='https://maps.apple.com/?ll='+c.latitude+','+c.longitude+'&q=My%20location';
-    if(c.heading!=null&&!isNaN(c.heading)&&c.heading>=0&&v>=1.4)setHeading(c.heading);   // GPS course is only valid while moving; hold last value when stopped
+    if(c.heading!=null&&!isNaN(c.heading)&&c.heading>=0&&v>=1.4)setHeading(c.heading);else if(S.course!=null&&v>=1.4&&now-S.courseT<8000)setHeading(S.course);
+    mapTick(c,v,now);   // GPS course is only valid while moving; hold last value when stopped
     status(acc<=15?'GPS strong':acc<=40?'GPS fair':'GPS weak',acc<=40?'ok':'bad');
     render();
   }
@@ -380,6 +400,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   }
   function stop(keepMsg){
     L('stop',{dist:Math.round(S.dist),max:+(S.max*3.6).toFixed(0),fixes:S.fixes,sim:S.sim?1:0});
+    upSoon(1500,'stop');
     saveTrip();S.ended=true;
     S.run=false;S.sim=false;
     if(S.watch!=null&&navigator.geolocation)navigator.geolocation.clearWatch(S.watch);S.watch=null;
@@ -449,19 +470,135 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
 
   try{var sa=JSON.parse(localStorage.getItem(TH)||'{}');if(sa.lim)S.lim=sa.lim;S.al=!!sa.on}catch(e){}
   function saveAl(){try{localStorage.setItem(TH,JSON.stringify({lim:S.lim,on:S.al}))}catch(e){}}
-  function syncAl(){$('lim').value=S.lim;$('alert').textContent=S.al?'On':'Off';$('alert').classList.toggle('on',S.al)}
-  function beep(){
+  function syncAl(){$('lim').value=S.lim;$('alert').textContent=S.al?'On':'Off';$('alert').classList.toggle('on',S.al);drawSign()}
+  function beep(f){
     try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.resume)AC.resume();
-      var o=AC.createOscillator(),g=AC.createGain();o.frequency.value=880;g.gain.value=.15;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+.25)}catch(e){}
+      var o=AC.createOscillator(),g=AC.createGain();o.frequency.value=f||880;g.gain.value=.15;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+.25)}catch(e){}
   }
   function alertCheck(kmh){
-    var over=S.al&&kmh>S.lim;document.body.classList.toggle('over',over);
-    if(over&&!S.over)L('alert',{kmh:Math.round(kmh),lim:S.lim});
+    var lm=curLimit(),over=S.al&&lm!=null&&kmh>lm;document.body.classList.toggle('over',over);
+    if(over&&!S.over)L('alert',{kmh:Math.round(kmh),lim:lm,src:LIM.v!=null?'osm':'manual'});
     S.over=over;
     if(over&&Date.now()-S.lastBeep>3000){S.lastBeep=Date.now();beep();try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}}
   }
   $('alert').onclick=function(){S.al=!S.al;if(S.al)beep();syncAl();saveAl();render()};
-  $('lim').oninput=function(){var n=parseInt(this.value,10);if(n>=10&&n<=240){S.lim=n;saveAl()}};
+  $('lim').oninput=function(){var n=parseInt(this.value,10);if(n>=10&&n<=240){S.lim=n;saveAl();drawSign()}};
+
+  // ---- Speed limits + cameras from OpenStreetMap (Overpass), cached per ~1 km tile ----
+  var MP={osm:true,cam:true},LIM={v:null,cand:undefined,n:0,t:0,run:0},TS=0.01,TILES={},MDB=null,CAMS={},
+      OPS=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+  try{var m0=JSON.parse(localStorage.getItem('speedo.map')||'{}');for(var mk in m0)MP[mk]=m0[mk]}catch(e){}
+  try{var mq=indexedDB.open('speedo-map',1);mq.onupgradeneeded=function(){mq.result.createObjectStore('tiles',{keyPath:'k'})};mq.onsuccess=function(){MDB=mq.result}}catch(e){}
+  function curLimit(){return LIM.v!=null?LIM.v:(S.al?S.lim:null)}
+  function drawSign(){
+    var lm=curLimit(),t=$('signtxt');t.textContent=lm!=null?lm:'--';t.setAttribute('font-size',lm!=null&&lm>=100?30:38);
+    $('sign').classList.toggle('dim',lm==null);$('sign').classList.toggle('man',LIM.v==null&&lm!=null);
+  }
+  function brg(a,b,c,d){var r=Math.PI/180,y=Math.sin((d-b)*r)*Math.cos(c*r),x=Math.cos(a*r)*Math.sin(c*r)-Math.sin(a*r)*Math.cos(c*r)*Math.cos((d-b)*r);return (Math.atan2(y,x)/r+360)%360}
+  function adiff(a,b){return Math.abs(((a-b+540)%360)-180)}
+  function mdist(a,b,c,d){var k=Math.cos((a+c)*Math.PI/360);return Math.sqrt(Math.pow((d-b)*k*111320,2)+Math.pow((c-a)*110540,2))}
+  function segd(la,lo,p,q){
+    var k=Math.cos(la*Math.PI/180),ax=(p[1]-lo)*k*111320,ay=(p[0]-la)*110540,dx=(q[1]-lo)*k*111320-ax,dy=(q[0]-la)*110540-ay;
+    var t=Math.max(0,Math.min(1,-(ax*dx+ay*dy)/(dx*dx+dy*dy||1)));
+    return Math.sqrt(Math.pow(ax+t*dx,2)+Math.pow(ay+t*dy,2));
+  }
+  function pv(x){var m=/^\s*(\d+(?:\.\d+)?)\s*(mph)?/.exec(x||'');return m?Math.round(+m[1]*(m[2]?1.609:1)):null}   // "50", "30 mph"; ignores none/signals
+  function tk(la,lo){return Math.floor(la/TS)+'_'+Math.floor(lo/TS)}
+  function tbox(k){var a=k.split('_').map(Number);return [a[0]*TS,a[1]*TS,(a[0]+1)*TS,(a[1]+1)*TS]}
+  function parseTile(j){
+    var w=[],c=[];
+    (j.elements||[]).forEach(function(e){
+      var t=e.tags||{};
+      if(e.type==='way'&&e.geometry){
+        var f=pv(t['maxspeed:forward']||t.maxspeed),b=pv(t['maxspeed:backward']||t.maxspeed);if(f==null&&b==null)return;
+        w.push({f:f,b:b,o:/^(yes|true|1)$/.test(t.oneway||'')?1:0,g:e.geometry.map(function(p){return [+p.lat.toFixed(5),+p.lon.toFixed(5)]})});
+      }else if(e.type==='node')c.push({id:e.id,la:e.lat,lo:e.lon,v:pv(t.maxspeed)});
+    });
+    return {w:w,c:c};
+  }
+  function saveTile(k,p){
+    if(!MDB)return;
+    try{var st=MDB.transaction('tiles','readwrite').objectStore('tiles');st.put({k:k,t:Date.now(),w:p.w,c:p.c});
+      st.getAll().onsuccess=function(){var a=this.result;if(a.length>60){a.sort(function(x,y){return x.t-y.t});for(var i=0;i<a.length-60;i++)st.delete(a[i].k)}}}catch(e){}
+  }
+  function fetchTile(k,i){
+    var T=TILES[k],b=tbox(k),bb=b.map(function(x){return x.toFixed(4)}).join(','),t0=Date.now();
+    var q='[out:json][timeout:25];way["highway"]["maxspeed"]('+bb+');out tags geom;(node["highway"="speed_camera"]('+bb+');node["enforcement"="maxspeed"]('+bb+'););out;';
+    T.busy=true;
+    fetch(OPS[i],{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(j){
+      var p=parseTile(j);T.w=p.w;T.c=p.c;T.ready=true;T.busy=false;T.fail=0;
+      L('limit',{tile:k,ok:1,ways:p.w.length,cams:p.c.length,ms:Date.now()-t0,srv:i});saveTile(k,p);
+    }).catch(function(e){
+      if(i+1<OPS.length){fetchTile(k,i+1);return}
+      T.busy=false;T.fail=(T.fail||0)+1;T.retry=Date.now()+Math.min(600000,30000*Math.pow(2,T.fail-1));
+      L('limit',{tile:k,ok:0,msg:String(e&&e.message||e),fail:T.fail});
+    });
+  }
+  function loadTile(k){
+    var T=TILES[k];
+    if(MDB){try{var r=MDB.transaction('tiles').objectStore('tiles').get(k);
+      r.onsuccess=function(){var x=r.result;if(x&&Date.now()-x.t<6048e5){T.w=x.w;T.c=x.c;T.ready=true;T.busy=false;L('limit',{tile:k,ok:1,cache:1,ways:x.w.length,cams:x.c.length})}else fetchTile(k,0)};
+      r.onerror=function(){fetchTile(k,0)};return}catch(e){}}
+    fetchTile(k,0);
+  }
+  function getTile(k){
+    var T=TILES[k];
+    if(!T){TILES[k]={ready:false,busy:true,w:[],c:[],fail:0};loadTile(k);return}
+    if(!T.ready&&!T.busy&&!(T.retry>Date.now()))fetchTile(k,0);
+  }
+  function limMatch(la,lo,hd,acc,tiles,now){
+    var R=Math.max(30,Math.min(60,acc||0)),best=null;
+    tiles.forEach(function(T){T.w.forEach(function(w){
+      for(var i=0;i<w.g.length-1;i++){
+        var p=w.g[i],q=w.g[i+1],d=segd(la,lo,p,q);if(d>R)continue;
+        var fw=null,pen=0;
+        if(hd!=null){var df=adiff(brg(p[0],p[1],q[0],q[1]),hd);fw=df<90;if(w.o&&!fw)pen=60}      // one-way roads only count when you drive with them
+        var sc=d+pen;if(sc>R)continue;
+        if(!best||sc<best.s)best={s:sc,v:fw===false?(w.b!=null?w.b:w.f):(w.f!=null?w.f:w.b)};
+      }
+    })});
+    var cand=best?best.v:null;
+    if(best)LIM.t=now;
+    if(cand===LIM.cand)LIM.n++;else{LIM.cand=cand;LIM.n=1}
+    if(LIM.n>=2&&cand!==LIM.v&&(cand!==null||now-LIM.t>10000)){      // needs 2 agreeing readings; clears only after 10 s with no match
+      LIM.v=cand;L('limit',{v:cand,la:+la.toFixed(5),lo:+lo.toFixed(5),hd:hd!=null?Math.round(hd):null});drawSign();
+    }
+  }
+  function camCheck(la,lo,hd,v,tiles,now){
+    var best=null,k;
+    for(k in CAMS)if(now-CAMS[k].t>600000)delete CAMS[k];
+    if(hd!=null&&v>=2)tiles.forEach(function(T){T.c.forEach(function(c){
+      var d=mdist(la,lo,c.la,c.lo);if(d>800||d<15)return;
+      var df=adiff(brg(la,lo,c.la,c.lo),hd);if(df>40||d*Math.sin(df*Math.PI/180)>35)return;     // only cameras ahead, on your line of travel
+      if(!best||d<best.d)best={c:c,d:d};
+    })});
+    var el=$('cam');
+    if(!best){el.hidden=true;return}
+    el.hidden=false;el.textContent='📷 '+(Math.round(best.d/10)*10)+' m'+(best.c.v?' · '+best.c.v:'');
+    var st=CAMS[best.c.id]||(CAMS[best.c.id]={t:now,s:0});
+    if(st.s<1){st.s=1;beep(1200);L('camera',{id:best.c.id,d:Math.round(best.d),v:best.c.v||null})}
+    else if(st.s<2&&best.d<300){st.s=2;beep(1200);setTimeout(function(){beep(1200)},300)}
+  }
+  function mapTick(c,v,now){
+    if(!MP.osm&&!MP.cam)return;
+    if(now-LIM.run<2000)return;LIM.run=now;
+    var la=c.latitude,lo=c.longitude,fast=v>=1.4;
+    var hd=(c.heading!=null&&!isNaN(c.heading)&&c.heading>=0&&fast)?c.heading:(S.course!=null&&now-S.courseT<8000&&fast?S.course:null);
+    var k=tk(la,lo),b=tbox(k),mg=0.002;
+    getTile(k);
+    if(la-b[0]<mg)getTile(tk(la-TS,lo));if(b[2]-la<mg)getTile(tk(la+TS,lo));if(lo-b[1]<mg)getTile(tk(la,lo-TS));if(b[3]-lo<mg)getTile(tk(la,lo+TS));   // prefetch the next tile near an edge
+    var rd=[];for(var i=-1;i<=1;i++)for(var j=-1;j<=1;j++){var T=TILES[tk(la+i*TS,lo+j*TS)];if(T&&T.ready)rd.push(T)}
+    if(MP.osm)limMatch(la,lo,hd,c.accuracy,rd,now);
+    if(MP.cam)camCheck(la,lo,hd,v,rd,now);else $('cam').hidden=true;
+  }
+  function syncMP(){
+    $('bosm').textContent='OSM limits: '+(MP.osm?'On':'Off');$('bosm').classList.toggle('on',MP.osm);
+    $('bcam').textContent='Camera alerts: '+(MP.cam?'On':'Off');$('bcam').classList.toggle('on',MP.cam);
+  }
+  function saveMP(){try{localStorage.setItem('speedo.map',JSON.stringify(MP))}catch(e){}syncMP()}
+  $('bosm').onclick=function(){MP.osm=!MP.osm;if(!MP.osm){LIM.v=null;LIM.cand=undefined;drawSign()}saveMP()};
+  $('bcam').onclick=function(){MP.cam=!MP.cam;if(!MP.cam)$('cam').hidden=true;saveMP()};
+  syncMP();
 
   // ---- Elevation profile (smoothed GPS altitude, scrolling by distance) ----
   var E={s:[],raw:[],sm:null,t:0,gr:null,W:1500};
@@ -593,6 +730,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   }
   function tm(t){var d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())+'.'+Math.floor(d.getMilliseconds()/100)}
   function showLogs(){
+    updUp();
     var on=$('blur').checked;
     readLogs(function(a){
       var sz=a.length?Math.round(JSON.stringify(a).length/1024):0;
@@ -618,6 +756,88 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
       L('export',{n:a.length,blurred:on});
     });
   };
+
+  // ---- Send logs to GitHub (Contents API, one new file per upload) ----
+  var GK='speedo.gh',UK='speedo.logup',DK='speedo.dev';
+  var GH={repo:'Sambuddha-Debnath/Speedo',branch:'logs',token:'',auto:true},upBusy=false,upT=null,pub=null,devId='anon',sessId=new Date().toISOString().slice(11,19).replace(/:/g,'');
+  try{var g0=JSON.parse(localStorage.getItem(GK)||'{}');for(var gk in g0)GH[gk]=g0[gk]}catch(e){}
+  try{devId=localStorage.getItem(DK);if(!devId){devId=Math.random().toString(16).slice(2,10);localStorage.setItem(DK,devId)}}catch(e){devId='anon'}
+  $('ghrepo').value=GH.repo;$('ghbr').value=GH.branch||'';$('ghauto').checked=!!GH.auto;
+  if(GH.token)$('ghtok').placeholder='Token saved (paste to replace)';
+  function saveGH(){try{localStorage.setItem(GK,JSON.stringify(GH))}catch(e){}}
+  function upStatus(t){$('upst').textContent=t}
+  function ghHead(){return{'Authorization':'Bearer '+GH.token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}}
+  function b64(t){var b=new TextEncoder().encode(t),r='';for(var i=0;i<b.length;i+=8192)r+=String.fromCharCode.apply(null,b.subarray(i,i+8192));return btoa(r)}
+  function ghOk(){return !!GH.token&&/^[\w.-]+\/[\w.-]+$/.test(GH.repo)}
+  function readSince(after,cb){
+    flush();
+    if(!LG.db){cb([]);return}
+    var out=[];
+    try{var r=LG.db.transaction('logs').objectStore('logs').openCursor(after?IDBKeyRange.lowerBound(after,true):null);
+      r.onsuccess=function(){var c=r.result;if(c){out.push({id:c.key,t:c.value.t,k:c.value.k,d:c.value.d});c.continue()}else cb(out)};
+      r.onerror=function(){cb([])}}catch(e){cb([])}
+  }
+  function updUp(){
+    if(!GH.token){upStatus('Not set up. Add a repo and token, then tap Save & test.');return}
+    readSince(+localStorage.getItem(UK)||0,function(a){upStatus('Pending upload: '+a.length+' entries'+(pub===true?' · repo is PUBLIC, coordinates are always blurred':''))});
+  }
+  function checkRepo(cb){
+    var H=ghHead(),base='https://api.github.com/repos/'+GH.repo,J=Object.assign({'Content-Type':'application/json'},H);
+    fetch(base,{headers:H}).then(function(r){return r.json().then(function(j){return{s:r.status,j:j}})}).then(function(x){
+      if(x.s!==200){cb(x.s===401?'Token rejected (401). Check it has not expired.':x.s===404?'Repo not found, or the token has no access to it (404).':'GitHub error '+x.s);return}
+      pub=!x.j.private;
+      if(x.j.permissions&&x.j.permissions.push===false){cb('Token cannot write. It needs Contents: Read and write.');return}
+      if(!GH.branch){cb(null);return}
+      return fetch(base+'/branches/'+encodeURIComponent(GH.branch),{headers:H}).then(function(r){
+        if(r.status===200){cb(null);return}
+        if(r.status!==404){cb('GitHub error '+r.status);return}
+        return fetch(base+'/git/ref/heads/'+encodeURIComponent(x.j.default_branch||'main'),{headers:H}).then(function(r){return r.json()}).then(function(ref){   // branch is missing: create it from the default branch
+          var sha=ref.object&&ref.object.sha;
+          if(!sha){cb('Could not read the default branch.');return}
+          return fetch(base+'/git/refs',{method:'POST',headers:J,body:JSON.stringify({ref:'refs/heads/'+GH.branch,sha:sha})}).then(function(r){cb(r.status===201?null:'Could not create branch "'+GH.branch+'" ('+r.status+').',r.status===201?'created':null)});
+        });
+      });
+    }).catch(function(){cb('Offline or blocked.')});
+  }
+  function upSoon(ms,why){clearTimeout(upT);upT=setTimeout(function(){upload(why)},ms)}
+  function upload(why,manual){
+    if(upBusy)return;
+    if(!manual&&!GH.auto)return;
+    if(!ghOk()){if(manual)upStatus('Add a repo and token first.');return}
+    if(!navigator.onLine){if(manual)upStatus('Offline. It will retry when back online.');return}
+    upBusy=true;
+    var fail=function(msg,st){upBusy=false;L('upload',{ok:0,why:why,status:st||null,msg:msg});if(manual||$('scrDbg').classList.contains('open'))upStatus('Upload failed: '+msg)};
+    var run=function(){
+      readSince(+localStorage.getItem(UK)||0,function(a){
+        if(!a.length||(!manual&&a.length<3)){upBusy=false;if(manual)upStatus('Nothing new to send.');return}
+        var blur=$('blur').checked||pub===true,sent=0,paths=[];
+        (function next(i){
+          if(i>=a.length||i>=2000){upBusy=false;upStatus('Sent '+sent+' entries at '+new Date().toLocaleTimeString()+(blur?' (coordinates blurred)':''));return}
+          var ch=a.slice(i,i+400),now=new Date(),iso=now.toISOString();
+          var txt='{"meta":'+JSON.stringify({app:'speedo',version:VER,device:devId,session:sessId,sent:iso,why:why,coordinatesBlurred:blur,count:ch.length})+',"entries":[\n'+ch.map(function(e){return JSON.stringify({t:new Date(e.t).toISOString(),k:e.k,d:bl(e.d,blur)})}).join(',\n')+'\n]}';
+          var path='logs/'+devId+'/'+iso.slice(0,10)+'/'+iso.slice(11,19).replace(/:/g,'')+'-'+sessId+'-'+Math.random().toString(16).slice(2,5)+'.json';
+          fetch('https://api.github.com/repos/'+GH.repo+'/contents/'+path,{method:'PUT',headers:Object.assign({'Content-Type':'application/json'},ghHead()),keepalive:why==='hidden'&&txt.length<40000,
+            body:JSON.stringify({message:'log '+devId+' '+iso.slice(0,19)+' ('+why+')',content:b64(txt),branch:GH.branch||undefined})}).then(function(r){
+            if(r.status===201||r.status===200){try{localStorage.setItem(UK,String(ch[ch.length-1].id))}catch(e){}sent+=ch.length;next(i+400)}
+            else fail(r.status===401?'token rejected (401)':r.status===403?'forbidden or rate limited (403)':r.status===404?'repo or branch not found, or no access (404)':'GitHub error '+r.status,r.status);
+          }).catch(function(){fail('network error')});
+        })(0);
+      });
+    };
+    if(pub===null)checkRepo(function(err){if(err&&pub===null)fail(err);else run()});else run();
+  }
+  $('ghsave').onclick=function(){
+    GH.repo=$('ghrepo').value.trim();GH.branch=$('ghbr').value.trim();var t=$('ghtok').value.trim();if(t)GH.token=t;
+    GH.auto=$('ghauto').checked;saveGH();$('ghtok').value='';pub=null;
+    if(!ghOk()){upStatus('Enter the repo as owner/name and paste a token.');return}
+    $('ghtok').placeholder='Token saved (paste to replace)';upStatus('Testing…');
+    checkRepo(function(err,note){upStatus(err?err:(note==='created'?'Created branch '+GH.branch+'. ':'')+(pub?'Connected, but this repo is PUBLIC. Coordinates will always be blurred.':'Connected to a private repo. Ready.'))});
+  };
+  $('ghauto').onchange=function(){GH.auto=this.checked;saveGH()};
+  $('ghsend').onclick=function(){upStatus('Sending…');upload('manual',true)};
+  $('ghdel').onclick=function(){GH.token='';pub=null;saveGH();$('ghtok').placeholder='Fine-grained token';upStatus('Token removed from this phone.')};
+  setInterval(function(){if(S.run)upload('periodic')},600000);
+  upSoon(6000,'load');
 
   function openScr(id){$(id).classList.add('open')}
   function closeScr(id){$(id).classList.remove('open')}
