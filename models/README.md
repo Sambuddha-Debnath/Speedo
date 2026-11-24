@@ -1,0 +1,1 @@
+Place the validated, locally trained `driving-style-v1.onnx` model here. The app does not bundle a model because no representative labelled driving dataset was supplied. See `ml/train_driving_style.py` and `README-SPEEDO-AI.md`.

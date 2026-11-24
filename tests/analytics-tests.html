@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><title>SPEEDO AI unit tests</title>
+<pre id="out">Running…</pre>
+<script type="module">
+import { normaliseSample, featureVector } from '../js/ai/data-processor.js';
+import { detectEvents } from '../js/ai/event-detector.js';
+import { calculateScore } from '../js/ai/scoring-engine.js';
+const results=[];function test(name,fn){try{fn();results.push('PASS '+name)}catch(e){results.push('FAIL '+name+': '+e.message)}}
+const sample=(t,v,limit=60)=>normaliseSample({timestamp:t,gps:{latitude:12.97+t/1e8,longitude:77.59,accuracy:5},vehicle:{speed:v,heading:90,altitude:900},road:{speedLimit:limit},quality:{gpsValid:true,speedValid:true}});
+test('normalises missing sensor values to null',()=>{const s=normaliseSample({});if(s.vehicle.speed!==null)throw Error('expected null speed')});
+test('feature extractor computes acceleration',()=>{const f=featureVector([sample(1000,36),sample(2000,46)]);if(Math.abs(f[1].accelerationMps2-2.7778)>.01)throw Error('wrong acceleration')});
+test('detects overspeed with mapped limit',()=>{const e=detectEvents([sample(1000,50),sample(2000,80)]);if(!e.some(x=>x.eventType==='overspeed'))throw Error('no overspeed event')});
+test('does not score insufficient data',()=>{const r=calculateScore([sample(1000,20)],[]);if(r.score!==null)throw Error('should be insufficient')});
+const out=document.getElementById('out');out.textContent=results.join('\n');
+</script>

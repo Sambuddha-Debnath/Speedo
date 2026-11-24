@@ -1,0 +1,6 @@
+{
+  "name": "speedo-ai-local",
+  "private": true,
+  "type": "module",
+  "scripts": {"test:browser": "echo 'Open tests/analytics-tests.html in a browser served from localhost or HTTPS'"}
+}
