@@ -1,5 +1,5 @@
 import { detectEvents } from './event-detector.js';
-import { calculateScore } from './scoring-engine.js';
+import { calculateControlScore, calculateScore } from './scoring-engine.js';
 import { saveEvents, saveReport, updateTrip } from '../storage/trip-store.js';
 
 function distanceBetween(a, b) {
@@ -105,11 +105,11 @@ export function tripMetrics(samples) {
 }
 
 export async function analyseTrip(trip,samples) {
-  const events=detectEvents(samples); const score=calculateScore(samples,events);
+  const events=detectEvents(samples); const score=calculateScore(samples,events); const control=calculateControlScore(samples);
   const speeds=samples.filter(s=>s.quality.speedValid).map(s=>s.vehicle.speed);
   const metrics=tripMetrics(samples);
-  const report={tripId:trip.tripId,createdAt:Date.now(),simulated:!!trip.simulated,tripOverview:{startTime:trip.startTime,endTime:trip.endTime||Date.now(),durationSeconds:Math.max(0,Math.round(((trip.endTime||Date.now())-trip.startTime)/1000))},score:score.score,scoreLabel:score.label,scoreDetails:score,metrics,events,summary:{samples:samples.length,maximumSpeed:speeds.length?Math.max(...speeds):null,averageSpeed:speeds.length?speeds.reduce((a,b)=>a+b,0)/speeds.length:null,overspeedEvents:events.filter(e=>e.eventType==='overspeed').length,possibleBraking:events.filter(e=>e.eventType==='possible_harsh_braking').length,possibleAcceleration:events.filter(e=>e.eventType==='possible_harsh_acceleration').length,possibleCornering:events.filter(e=>e.eventType==='possible_sharp_corner').length}};
+  const report={tripId:trip.tripId,createdAt:Date.now(),simulated:!!trip.simulated,tripOverview:{startTime:trip.startTime,endTime:trip.endTime||Date.now(),durationSeconds:Math.max(0,Math.round(((trip.endTime||Date.now())-trip.startTime)/1000))},score:score.score,scoreLabel:score.label,scoreDetails:score,controlScore:control.score,controlScoreDetails:control,metrics,events,summary:{samples:samples.length,maximumSpeed:speeds.length?Math.max(...speeds):null,averageSpeed:speeds.length?speeds.reduce((a,b)=>a+b,0)/speeds.length:null,overspeedEvents:events.filter(e=>e.eventType==='overspeed').length,possibleBraking:events.filter(e=>e.eventType==='possible_harsh_braking').length,possibleAcceleration:events.filter(e=>e.eventType==='possible_harsh_acceleration').length,possibleCornering:events.filter(e=>e.eventType==='possible_sharp_corner').length}};
   await saveEvents(trip.tripId,events); await saveReport(report);
-  await updateTrip({...trip,endTime:trip.endTime||Date.now(),status:'completed',analyticsStatus:'complete',score:score.score,totalSamples:samples.length,maximumSpeed:report.summary.maximumSpeed,totalDistance:metrics.distanceM,movingTime:metrics.movingTimeSeconds,averageSpeed:metrics.averageSpeedKmh});
+  await updateTrip({...trip,endTime:trip.endTime||Date.now(),status:'completed',analyticsStatus:'complete',score:score.score,controlScore:control.score,totalSamples:samples.length,maximumSpeed:report.summary.maximumSpeed,totalDistance:metrics.distanceM,movingTime:metrics.movingTimeSeconds,averageSpeed:metrics.averageSpeedKmh});
   return report;
 }

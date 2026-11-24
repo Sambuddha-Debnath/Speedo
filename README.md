@@ -5,13 +5,13 @@ SPEEDO is a browser-based, local-first driving dashboard and trip analytics PWA.
 ## Features
 
 - Digital and analogue GPS speedometers, heading, GPS accuracy, altitude, terrain profile, pitch/roll, speed warnings, and driving status.
-- Existing v10 GPS tracking, tilt calibration and mount settings, OpenStreetMap speed-limit/camera lookup, simulation, local trip history, CSV/GPX export, and diagnostic logs.
+- Existing v10 GPS tracking, gravity-referenced pitch/roll calibration, OpenStreetMap speed-limit/camera lookup, simulation, local trip history, CSV/GPX export, and diagnostic logs.
 - Local trip samples and analytics in IndexedDB, plus migration of legacy `speedo.trips` records without deleting their original LocalStorage data.
-- Rule-based trip analytics with data-quality gating, estimated driving events, transparent scores, trip details, elevation profiles, route viewing, and JSON report export.
+- Rule-based trip analytics with day/month/year filtering, configurable cumulative-distance windows, safety and GPS-estimated control-consistency scores, trip details, elevation profiles, route viewing, and JSON report export.
 - Leaflet/OpenStreetMap map, deduplicated saved places (50 m proximity tolerance), and on-device place editing/deletion.
 - Service-worker app-shell caching. External map tiles and the Leaflet CDN require a network connection.
 
-Analytics are deterministic rules, not a trained machine-learning model or a safety assessment. GPS-derived acceleration, elevation, headings, and events can be inaccurate.
+Analytics are deterministic rules, not a trained machine-learning model or a safety assessment. GPS-derived acceleration, elevation, headings, and events can be inaccurate. Racing context is user-selected; the app cannot detect tarmac/dirt, lap time, grip, or racing line.
 
 ## Run and test
 
@@ -23,7 +23,7 @@ Open `tests/analytics-tests.html` in the same HTTPS/localhost origin to run the 
 
 - Existing v10 trip records remain in LocalStorage under `speedo.trips`; the app imports a copy into its `speedo-ai` IndexedDB database and leaves the originals in place.
 - The database upgrade adds the `places` store without deleting existing stores or trip records.
-- Settings, sensor calibration, tilt configuration, and existing trip exports remain in LocalStorage. The Level reference is saved with the tilt settings; changing the phone mount clears that reference so it can be recalibrated.
+- Settings, sensor calibration, tilt configuration, and existing trip exports remain in LocalStorage. Tap the dashboard tilt section while the device is level and stationary to set or reset the gravity reference; it is saved and used for pitch and roll.
 - Trips, reports, analytics samples, and saved places are stored on this device. Export important data before clearing browser site data.
 - A failed legacy LocalStorage trip save is surfaced in the dashboard; the IndexedDB analytics copy is retained.
 
@@ -57,14 +57,19 @@ Diagnostic log uploads are also manual. They require a token entered for the cur
 3. Upload the complete `css/`, `js/`, `workers/`, and `tests/` folders, preserving their paths. Do not remove unrelated repository files.
 4. Commit the changes to the existing Pages deployment branch.
 5. In repository **Settings → Pages**, confirm Pages is still configured for that branch/folder and wait for the deployment to finish.
-6. Open the published URL and hard-refresh desktop browsers. On mobile, fully close and reopen the installed PWA so the `SPEEDO-v11.3` service-worker cache is activated.
+6. Open the published URL and hard-refresh desktop browsers. On mobile, fully close and reopen the installed PWA so the `SPEEDO-v11.4` service-worker cache is activated.
 
 If GitHub's web upload UI does not preserve folders, create each file using its full repository path (for example `js/maps/map-screen.js`) and paste the corresponding file contents.
 
 ## Known limitations
 
 - Mobile browsers may suspend GPS in the background; keep the app foregrounded during recording.
-- Sensor availability and permission behavior vary. Pitch/roll describe the phone orientation and depend on calibration and mounting. Use **Settings → Level reference → Reset level** to store a new baseline while the phone is in the desired level position; tapping **Level** later restores that baseline.
+- Sensor availability and permission behavior vary. Pitch/roll describe phone orientation relative to the gravity reference captured by tapping the dashboard tilt section while the vehicle/device is level and stationary. The same saved reference is used in portrait and landscape; real-device behavior still needs hardware testing.
 - GPS altitude, acceleration, event detection, and road speed-limit matches are estimates, not vehicle-grade measurements.
 - The browser map is not native Apple CarPlay. Live maps, speed-limit/camera lookups, and GitHub uploads require internet access.
 - The analytics browser test page does not certify real devices or live GitHub uploads; those require explicit on-device/service testing.
+
+## Additional guides
+
+- [GitHub diagnostic-log setup](./docs/GITHUB-LOG-UPLOAD.md): configure a repository and token, understand privacy controls, and collect logs for later test-fixture work.
+- [Feature and testing map](./docs/FEATURES-AND-TESTING.md): feature-to-code references and a repeatable manual/browser validation checklist.

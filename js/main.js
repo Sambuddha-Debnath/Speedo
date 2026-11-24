@@ -1,4 +1,5 @@
 import { uniqueUploadableLogs } from './logs/upload-filter.js';
+import { calculateTiltAngles, createTiltReference, tiltReferenceAtAngle, validTiltReference } from './tilt/tilt-reference.js';
 
 (function(){
   var $=function(id){return document.getElementById(id)};
@@ -168,7 +169,7 @@ import { uniqueUploadableLogs } from './logs/upload-filter.js';
     $('go').textContent='Stop';$('go').className='btn stop';
     status('Acquiring GPS…','bad');
     $('msg').textContent='Tracking. Keep this screen on while driving.';
-    L('start',{sim:0});enableTilt();startWatch('start');S.tick=setInterval(clock,500);lock();render();
+    L('start',{sim:0});if(T.cal)enableTilt();startWatch('start');S.tick=setInterval(clock,500);lock();render();
   }
   function stop(keepMsg){
     L('stop',{dist:Math.round(S.dist),max:+(S.max*3.6).toFixed(0),fixes:S.fixes,sim:S.sim?1:0});
@@ -211,12 +212,14 @@ import { uniqueUploadableLogs } from './logs/upload-filter.js';
     if(putTrips(a))S.pts=[];renderTrips();
   }
   function renderTrips(){
-    var h='';
-    loadTrips().forEach(function(t){
+    var h='',trips=loadTrips();
+    trips.forEach(function(t){
       var avg=t.mv>0?t.d/t.mv*3.6:0;
       h+='<div class="trip"><div><b>'+new Date(t.s).toLocaleString([],{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+(t.sim?' (sim)':'')+'</b><br><span>'+(t.d/1000).toFixed(2)+' km · '+dur((t.e-t.s)/1000)+' · max '+Math.round(t.mx)+' · avg '+Math.round(avg)+' km/h</span></div><div class="ta"><button data-a="details" data-id="'+t.id+'">Details</button><button data-a="csv" data-id="'+t.id+'">CSV</button><button data-a="gpx" data-id="'+t.id+'">GPX</button><button data-a="del" data-id="'+t.id+'">✕</button></div></div>';
     });
     $('tl').innerHTML=h||'<span style="color:var(--mute);font-size:13px">No trips yet. A trip is saved when you tap Stop.</span>';
+    $('tripLogCount').textContent=trips.length+' saved';
+    window.dispatchEvent(new CustomEvent('speedo:trip-log-updated'));
   }
   function out(name,text,type){
     var f=new File([text],name,{type:type});
@@ -236,7 +239,7 @@ import { uniqueUploadableLogs } from './logs/upload-filter.js';
   $('tl').onclick=function(e){
     var b=e.target.closest('button');if(!b)return;
     var id=+b.dataset.id,a=loadTrips(),t=a.filter(function(x){return x.id===id})[0];if(!t)return;
-    if(b.dataset.a==='del'){if(confirm('Delete this trip?')){putTrips(a.filter(function(x){return x.id!==id}));renderTrips()}}
+    if(b.dataset.a==='del'){if(confirm('Delete this trip?')){putTrips(a.filter(function(x){return x.id!==id}));window.dispatchEvent(new CustomEvent('speedo:trip-delete-request',{detail:{tripId:'legacy-'+id}}));renderTrips()}}
     else if(b.dataset.a==='details')window.dispatchEvent(new CustomEvent('speedo:trip-detail-request',{detail:{tripId:'legacy-'+id}}));
     else exportTrip(t,b.dataset.a);
   };
@@ -423,35 +426,38 @@ import { uniqueUploadableLogs } from './logs/upload-filter.js';
   }
 
   // ---- Tilt (pitch / roll), calibrated to level ----
-  var T={state:'off',listening:false,u:null,su:null,cal:null,samples:[],t0:0,p:0,r:0,sp:0,sr:0,ip:false,ir:false,mount:'auto'};
-  var vd=function(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]};
-  var vn=function(a){var l=Math.sqrt(vd(a,a))||1;return [a[0]/l,a[1]/l,a[2]/l]};
-  var vx=function(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]};
-  function validTiltVector(a){return Array.isArray(a)&&a.length===3&&a.every(Number.isFinite)&&Math.hypot(a[0],a[1],a[2])>0.5}
-  function updateLevelStatus(message){
-    $('levelStatus').textContent=message||(T.cal?'A saved reference is ready. Tap Level to activate it.':'No saved level yet. Tap Level while stationary to set it.');
+  var T={state:'off',listening:false,u:null,su:null,cal:null,samples:[],t0:0,p:0,r:0,sp:0,sr:0};
+  function screenAngle(){
+    var angle=screen.orientation&&Number.isFinite(screen.orientation.angle)?screen.orientation.angle:window.orientation;
+    return Number.isFinite(angle)?((angle%360)+360)%360:0;
   }
   try{
     var ti=JSON.parse(localStorage.getItem('speedo.tilt')||'{}');
-    T.ip=!!ti.ip;T.ir=!!ti.ir;
-    if(ti.m==='upright'||ti.m==='flat')T.mount=ti.m;
-    if(ti.cal&&validTiltVector(ti.cal.u)&&validTiltVector(ti.cal.f)&&validTiltVector(ti.cal.r)){
-      T.cal={u:vn(ti.cal.u),f:vn(ti.cal.f),r:vn(ti.cal.r)};
+    var savedReference=ti.cal&&Number.isFinite(ti.cal.angle)?ti.cal:Object.assign({},ti.cal,{angle:screenAngle()});
+    if(validTiltReference(savedReference)){
+      T.cal={u:savedReference.u,f:savedReference.f,r:savedReference.r,angle:savedReference.angle};
     }
   }catch(e){L('tilt',{storageErr:String(e)})}
   function saveTilt(){
     try{
-      localStorage.setItem('speedo.tilt',JSON.stringify({ip:T.ip,ir:T.ir,m:T.mount,cal:T.cal}));
+      localStorage.setItem('speedo.tilt',JSON.stringify({cal:T.cal}));
       return true;
     }catch(e){L('tilt',{saveErr:String(e)});return false}
   }
-  updateLevelStatus();
+  function currentTiltReference(){
+    if(!T.cal)return null;
+    return tiltReferenceAtAngle(T.cal,screenAngle());
+  }
   function onOri(e){
-    if(e.beta==null||e.gamma==null)return;
+    if(!Number.isFinite(e.beta)||!Number.isFinite(e.gamma))return;
     var b=e.beta*Math.PI/180,g=e.gamma*Math.PI/180;
     T.u=[-Math.cos(b)*Math.sin(g),Math.sin(b),Math.cos(b)*Math.cos(g)];   // world "up" in device axes
   }
-  function tiltLight(){$('ltilt').className='li '+(S.sim||T.state==='ok'?'ok':T.state==='denied'?'warn':T.state==='cal'||T.state==='wait'?'warn blink':'')}
+  function tiltLight(){
+    var active=S.sim||T.state==='ok'||T.state==='cal'||T.state==='wait';
+    $('att').setAttribute('aria-pressed',String(active));
+    $('ltilt').className='li '+(S.sim||T.state==='ok'?'ok':T.state==='denied'?'warn':T.state==='cal'||T.state==='wait'?'warn blink':'');
+  }
   function listen(){
     if(!T.listening){window.addEventListener('deviceorientation',onOri);T.listening=true}
     if(T.state!=='ok'&&T.state!=='cal'){T.state='wait';T.t0=Date.now()}
@@ -471,14 +477,11 @@ import { uniqueUploadableLogs } from './logs/upload-filter.js';
   }
   function finishCal(){
     var a=[0,0,0];T.samples.forEach(function(u){a[0]+=u[0];a[1]+=u[1];a[2]+=u[2]});
-    var u0=vn(a),flat=T.mount==='flat'?true:T.mount==='upright'?false:Math.abs(u0[2])>0.8,f;
-    if(flat){var ang=(screen.orientation&&screen.orientation.angle!=null)?screen.orientation.angle:(window.orientation||0);ang=((ang%360)+360)%360;f=[[0,1,0],[1,0,0],[0,-1,0],[-1,0,0]][Math.round(ang/90)%4]}   // flat: top of screen points forward
-    else f=[0,0,-1];                                                                                                                                  // upright: screen faces driver, so forward is into the screen
-    var d=vd(f,u0);f=vn([f[0]-d*u0[0],f[1]-d*u0[1],f[2]-d*u0[2]]);
-    T.cal={u:u0,f:f,r:vx(f,u0)};T.state='ok';
+    var angle=screenAngle(),reference=createTiltReference(a,angle);
+    if(!reference){T.state='none';L('tilt',{state:'invalid calibration'});$('msg').textContent='Level calibration failed. Hold the device steady and try again.';return}
+    T.cal=reference;T.state='ok';
     var saved=saveTilt();
-    updateLevelStatus(saved?'Level reference saved. Tap Level to activate it.':'Level set for this page, but could not be saved.');
-    L('tilt',{cal:u0.map(function(x){return +x.toFixed(3)}),f:f.map(function(x){return +x.toFixed(3)}),mount:flat?'flat':'upright',mset:T.mount,ip:T.ip?1:0,ir:T.ir?1:0});
+    L('tilt',{cal:reference.u.map(function(x){return +x.toFixed(3)}),f:reference.f.map(function(x){return +x.toFixed(3)}),mount:Math.abs(reference.u[2])>0.8?'flat':'upright',angle:angle,saved:saved?1:0});
     $('msg').textContent=saved?'Level set. Tilt is live.':'Level set, but could not be saved.';
   }
   var TK2=2.9,TRL=[];
@@ -496,10 +499,9 @@ import { uniqueUploadableLogs } from './logs/upload-filter.js';
     tiltLight();
     if(!ok){
       $('pv').textContent='--';$('rv').textContent='--';
-      $('pl').textContent=st==='cal'?'Calibrating…':st==='denied'?'Access denied':st==='none'?'No sensor':st==='wait'?'Starting…':'Tap to enable';
+      $('pl').textContent=st==='cal'?'Calibrating…':st==='denied'?'Access denied':st==='none'?'No sensor':st==='wait'?'Starting…':'Tap to set level';
       $('rl').textContent='';el.className='tile tilt att';setAtt(0,0);return;
     }
-    if(T.ip)p=-p;if(T.ir)r=-r;
     var mp=Math.abs(p),mr=Math.abs(r),m=Math.max(mp,mr);
     $('pv').textContent=(mp<0.5?'':p>0?'+':'\u2212')+Math.round(mp)+'\u00b0';
     $('rv').textContent=(mr<0.5?'':r>0?'+':'\u2212')+Math.round(mr)+'\u00b0';
@@ -519,9 +521,9 @@ import { uniqueUploadableLogs } from './logs/upload-filter.js';
       else if(el>5000){T.state='none';L('tilt',{state:'calibration timeout'});$('msg').textContent='No tilt sensor data.'}
     }
     if(T.state==='ok'&&T.cal&&T.su){
-      var c=T.cal,cl=function(x){return Math.max(-1,Math.min(1,x))};
-      T.p=Math.asin(cl(vd(T.su,c.f)))*180/Math.PI;     // nose up = positive
-      T.r=-Math.asin(cl(vd(T.su,c.r)))*180/Math.PI;    // right side down = positive
+      var angles=calculateTiltAngles(T.su,currentTiltReference());
+      T.p=angles.pitch;     // nose up = positive
+      T.r=angles.roll;      // right side down = positive
     }
     tiltUI();
   },100);
@@ -532,24 +534,18 @@ import { uniqueUploadableLogs } from './logs/upload-filter.js';
   function enableTilt(forceCalibration){
     askTilt().then(function(){
       if(T.state==='denied'||T.state==='none')return;
-      if(forceCalibration||!T.cal){calibrate();return}
+      if(forceCalibration){calibrate();return}
+      if(!T.cal){T.state='off';$('msg').textContent='Tap the tilt panel on level ground to set a gravity reference.';return}
       if(T.u){T.state='ok';$('msg').textContent='Saved level restored. Tilt is live.'}
       else{T.state='wait';T.t0=Date.now();$('msg').textContent='Waiting for tilt sensor…'}
     });
   }
-  $('att').onclick=function(){if(!S.sim&&(T.state==='off'||T.state==='denied'||T.state==='none'))enableTilt()};
-  $('lvl').onclick=function(){if(S.sim){$('msg').textContent='Level is not used in simulation.';return}enableTilt()};
-  $('bcal').onclick=function(){closeScr('scrSet');enableTilt(true)};
-  function tiltSet(){$('invp').classList.toggle('on',T.ip);$('invr').classList.toggle('on',T.ir);
-    [].forEach.call($('mnt').children,function(b){b.classList.toggle('on',b.dataset.m===T.mount)})}
-  $('invp').onclick=function(){T.ip=!T.ip;saveTilt();tiltSet();L('tilt',{invp:T.ip?1:0})};
-  $('invr').onclick=function(){T.ir=!T.ir;saveTilt();tiltSet();L('tilt',{invr:T.ir?1:0})};
-  [].forEach.call($('mnt').children,function(b){b.onclick=function(){
-    if(T.mount===b.dataset.m)return;
-    T.mount=b.dataset.m;T.cal=null;saveTilt();tiltSet();updateLevelStatus();L('tilt',{mount:T.mount});
-    if(T.listening)enableTilt(true);
-  }});
-  tiltSet();
+  function activateTilt(){
+    if(S.sim){$('msg').textContent='Level calibration is unavailable during simulation.';return}
+    enableTilt(true);
+  }
+  $('att').onclick=activateTilt;
+  $('att').onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();activateTilt()}};
 
   // ---- Debug screen ----
   var BK='speedo.blur';

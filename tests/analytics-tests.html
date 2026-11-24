@@ -9,10 +9,12 @@
 <script type="module">
 import { normaliseSample, featureVector } from '../js/ai/data-processor.js';
 import { detectEvents } from '../js/ai/event-detector.js';
-import { calculateScore } from '../js/ai/scoring-engine.js';
+import { calculateControlScore, calculateScore } from '../js/ai/scoring-engine.js';
+import { buildDistanceWindows, distanceWeightedScore, periodBounds } from '../js/ai/analytics-dashboard.js';
 import { tripMetrics } from '../js/ai/trip-analysis.js';
 import { uploadTripReport } from '../js/reports/github-upload.js';
 import { uniqueUploadableLogs } from '../js/logs/upload-filter.js';
+import { calculateTiltAngles, createTiltReference, tiltReferenceAtAngle, validTiltReference } from '../js/tilt/tilt-reference.js';
 
 const results = [];
 function test(name, fn) {
@@ -102,6 +104,41 @@ test('scores a sufficiently covered trip with transparent components', () => {
   const result = calculateScore(samples, []);
   if (result.score === null || !result.components || result.coverage !== 100) throw new Error('valid trip score missing');
 });
+test('calculates a cautious GPS control-consistency score', () => {
+  const steady = Array.from({ length: 60 }, (_, index) => sample(1000 + index * 1000, 40));
+  const variable = Array.from({ length: 60 }, (_, index) =>
+    sample(1000 + index * 1000, index % 2 ? 52 : 30, { heading: index % 3 ? 90 : 125 }));
+  const steadyScore = calculateControlScore(steady);
+  const variableScore = calculateControlScore(variable);
+  if (steadyScore.score === null || variableScore.score === null || steadyScore.score <= variableScore.score) {
+    throw new Error('control consistency did not reflect the GPS-derived variation');
+  }
+  if (!steadyScore.reason.includes('not a race-performance')) throw new Error('control-score limitation is missing');
+});
+test('builds weighted analytics windows from selected trip distances', () => {
+  const windows = buildDistanceWindows([
+    { tripId: 'trip-a', startTime: 1, distanceKm: 15, safetyScore: 80, controlScore: 70 },
+    { tripId: 'trip-b', startTime: 2, distanceKm: 5, safetyScore: 60, controlScore: 90 }
+  ], 10);
+  if (windows.length !== 2 || windows[0].safetyScore !== 80 || windows[1].safetyScore !== 70) {
+    throw new Error('distance windows did not split and weight trip-level scores');
+  }
+  if (distanceWeightedScore(windows, 'safetyScore') !== 75) throw new Error('distance-weighted average is incorrect');
+  let rejected = false;
+  try { buildDistanceWindows([], 15); } catch { rejected = true; }
+  if (!rejected) throw new Error('invalid distance window was accepted');
+});
+test('filters analytics by local day, month, and year boundaries', () => {
+  const day = periodBounds('day', '2026-03-10');
+  const month = periodBounds('month', '2026-03');
+  const year = periodBounds('year', '2026');
+  if (new Date(day.start).getDate() !== 10 || new Date(day.end).getDate() !== 11 || day.end <= day.start) throw new Error('day range is incorrect');
+  if (new Date(month.start).getMonth() !== 2 || new Date(month.end).getMonth() !== 3) throw new Error('month range is incorrect');
+  if (new Date(year.start).getFullYear() !== 2026 || new Date(year.end).getFullYear() !== 2027) throw new Error('year range is incorrect');
+  let rejected = false;
+  try { periodBounds('day', '2026-02-31'); } catch { rejected = true; }
+  if (!rejected) throw new Error('invalid calendar date was accepted');
+});
 test('trip summary reports moving time, elevation, overspeed and quality', () => {
   const samples = [
     sample(1000, 36, { altitude: 100, speedLimit: 30, gradient: -3 }),
@@ -133,6 +170,25 @@ test('log uploads deduplicate IDs and keep simulated trip logs local', () => {
   ];
   const ids = uniqueUploadableLogs(entries).map(entry => entry.id);
   if (ids.join(',') !== '1,6,7,8,9,12,13') throw new Error(`unexpected uploadable log IDs: ${ids.join(',')}`);
+});
+test('tilt reference measures pitch and roll from the saved gravity baseline', () => {
+  const horizontal = createTiltReference([0, 0, 1], 0);
+  const pitch = calculateTiltAngles([0, Math.sin(Math.PI / 18), Math.cos(Math.PI / 18)], horizontal);
+  const roll = calculateTiltAngles([-Math.sin(Math.PI / 15), 0, Math.cos(Math.PI / 15)], horizontal);
+  if (!validTiltReference(horizontal) || Math.abs(pitch.pitch - 10) > 0.01 || Math.abs(roll.roll - 12) > 0.01) {
+    throw new Error('horizontal orientation did not report relative pitch and roll');
+  }
+});
+test('tilt reference stays level across vertical and screen-orientation changes', () => {
+  const vertical = createTiltReference([0, 1, 0], 0);
+  const rotated = tiltReferenceAtAngle(vertical, 90);
+  const level = calculateTiltAngles([1, 0, 0], rotated);
+  if (Math.abs(level.pitch) > 0.01 || Math.abs(level.roll) > 0.01) {
+    throw new Error('vertical reference was not adjusted to the new screen orientation');
+  }
+  if (validTiltReference({ u: [0, 0, 0], f: [0, 1, 0], r: [1, 0, 0], angle: 0 })) {
+    throw new Error('invalid saved reference was accepted');
+  }
 });
 
 await testAsync('report upload rejects missing credentials and malformed repositories', async () => {
@@ -206,6 +262,8 @@ await testAsync('report upload does not overwrite duplicates and omits route by 
     score: 90,
     scoreLabel: 'Consistent',
     scoreDetails: {},
+    controlScore: 82,
+    controlScoreDetails: { label: 'Consistent' },
     metrics: {},
     events: [{ eventType: 'overspeed', location: { latitude: 12, longitude: 77 } }]
   };
@@ -223,6 +281,9 @@ await testAsync('report upload does not overwrite duplicates and omits route by 
     const request = calls.find(call => call.options.method === 'PUT');
     const bytes = Uint8Array.from(atob(JSON.parse(request.options.body).content), char => char.charCodeAt(0));
     const payload = JSON.parse(new TextDecoder().decode(bytes));
+    if (payload.trip.controlScore !== 82 || payload.trip.controlScoreDetails.label !== 'Consistent') {
+      throw new Error('control-consistency score was omitted');
+    }
     if (payload.route || payload.trip.events[0].location || payload.locationCoordinatesIncluded) {
       throw new Error('coordinates were included without consent');
     }

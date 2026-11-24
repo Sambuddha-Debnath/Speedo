@@ -1,9 +1,9 @@
-const C='SPEEDO-v11.3';
+const C='SPEEDO-v11.5';
 const A=[
   './','index.html','manifest.json','icon-192.png','icon-512.png',
   './css/dashboard.css','./css/main.css','./css/analytics.css','./css/map.css','./css/places.css','./css/responsive.css',
-  './js/main.js','./js/ai/ai-app.js','./js/ai/ai-manager.js','./js/ai/data-processor.js',
-  './js/ai/event-detector.js','./js/ai/scoring-engine.js','./js/ai/trip-analysis.js',
+  './js/main.js','./js/tilt/tilt-reference.js','./js/ai/ai-app.js','./js/ai/ai-manager.js','./js/ai/data-processor.js',
+  './js/ai/event-detector.js','./js/ai/scoring-engine.js','./js/ai/trip-analysis.js','./js/ai/analytics-dashboard.js',
   './js/ai/driver-profile.js','./js/storage/database.js','./js/storage/trip-store.js','./js/logs/upload-filter.js',
   './js/maps/map-screen.js','./js/places/places.js','./js/reports/github-upload.js',
   './workers/analytics-worker.js','./tests/analytics-tests.html'

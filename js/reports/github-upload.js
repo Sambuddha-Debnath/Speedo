@@ -24,6 +24,8 @@ export async function uploadTripReport({ repository, token, report, includeRoute
       score: report.score,
       scoreLabel: report.scoreLabel,
       scoreDetails: report.scoreDetails,
+      controlScore: report.controlScore,
+      controlScoreDetails: report.controlScoreDetails,
       metrics: report.metrics,
       events: report.events.map(event => includeRoute ? event : withoutLocation(event))
     },

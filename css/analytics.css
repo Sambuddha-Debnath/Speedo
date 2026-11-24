@@ -90,3 +90,269 @@
   font-size: 16px;
   font-variant-numeric: tabular-nums;
 }
+
+.trip-analytics {
+  position: relative;
+  flex: none;
+  align-self: center;
+  width: 100%;
+  max-width: 560px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.trip-analytics-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.trip-analytics-heading h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.score-help {
+  position: relative;
+  flex: none;
+}
+
+.score-help summary {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  list-style: none;
+}
+
+.score-help summary::-webkit-details-marker {
+  display: none;
+}
+
+.score-help-content {
+  position: absolute;
+  z-index: 8;
+  top: 34px;
+  right: 0;
+  width: min(84vw, 430px);
+  max-height: min(65vh, 360px);
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 8px 24px #0008;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.analytics-filters {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.analytics-filters label,
+.profile-filter {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  color: var(--mute);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.analytics-filters select,
+.analytics-filters input,
+.profile-filter select {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.analytics-view-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.analytics-view-toggle button {
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--mute);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.analytics-view-toggle button.on {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.profile-filter {
+  margin-top: 8px;
+}
+
+.profile-filter[hidden] {
+  display: none;
+}
+
+.analytics-results {
+  margin-top: 8px;
+  font-size: 11px;
+}
+
+.analytics-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.analytics-score-card {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--bg);
+}
+
+.analytics-score-card small,
+.analytics-score-card strong,
+.analytics-score-card span {
+  display: block;
+}
+
+.analytics-score-card small {
+  color: var(--mute);
+  font-size: 10px;
+}
+
+.analytics-score-card strong {
+  margin: 2px 0;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.analytics-score-card span {
+  color: var(--mute);
+  font-size: 10px;
+}
+
+.analytics-chart {
+  display: block;
+  width: 100%;
+  height: 72px;
+  margin-top: 6px;
+}
+
+.analytics-chart .chart-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.analytics-chart .safety-line,
+.analytics-chart .control-line,
+.analytics-chart .profile-line {
+  fill: none;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.analytics-chart .safety-line {
+  stroke: var(--acc);
+}
+
+.analytics-chart .control-line {
+  stroke: var(--warn);
+}
+
+.analytics-chart .profile-line {
+  stroke: var(--acc);
+}
+
+.analytics-summary,
+.analytics-note {
+  margin: 5px 0 0;
+  color: var(--mute);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.analytics-coach {
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.legend-safety {
+  color: var(--acc);
+}
+
+.legend-control {
+  color: var(--warn);
+}
+
+.analytics-profile-card {
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--bg);
+}
+
+.analytics-profile-card strong {
+  display: block;
+  font-size: 26px;
+}
+
+.analytics-profile-card p {
+  margin: 3px 0 0;
+  color: var(--mute);
+  font-size: 10px;
+}
+
+@media (max-width: 360px) {
+  .analytics-filters {
+    gap: 4px;
+  }
+
+  @media (max-height: 500px) and (orientation: landscape) {
+    .trip-analytics {
+      padding: 7px 10px;
+    }
+
+    .analytics-chart {
+      height: 54px;
+    }
+
+    .analytics-score-card {
+      padding: 5px 7px;
+    }
+  }
+
+  .analytics-filters select,
+  .analytics-filters input {
+    padding: 0 4px;
+    font-size: 11px;
+  }
+}

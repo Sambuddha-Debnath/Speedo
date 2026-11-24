@@ -67,7 +67,7 @@
   </div>
 
   <div class="side l">
-    <div class="tile tilt att" id="att"><div class="k">Tilt</div>
+    <div class="tile tilt att" id="att" role="button" tabindex="0" aria-label="Calibrate and activate pitch and roll" aria-describedby="pl rl"><div class="k">Tilt</div>
       <svg class="tilt-meter" viewBox="0 0 200 200" aria-label="Tilt meter">
         <path class="tg-br" d="M4 26V4H26M174 4H196V26M196 174V196H174M26 196H4V174"/>
         <path class="tg-x" d="M12 100H66M134 100H188M100 12V66M100 134V188"/>
@@ -77,7 +77,7 @@
         <circle class="tg-trail" id="tt0" r="2" opacity="0.07" cx="100" cy="100"/><circle class="tg-trail" id="tt1" r="2.45" opacity="0.115" cx="100" cy="100"/><circle class="tg-trail" id="tt2" r="2.9" opacity="0.16" cx="100" cy="100"/><circle class="tg-trail" id="tt3" r="3.35" opacity="0.205" cx="100" cy="100"/><circle class="tg-trail" id="tt4" r="3.8" opacity="0.25" cx="100" cy="100"/><circle class="tg-trail" id="tt5" r="4.25" opacity="0.295" cx="100" cy="100"/><circle class="tg-trail" id="tt6" r="4.7" opacity="0.34" cx="100" cy="100"/><circle class="tg-trail" id="tt7" r="5.15" opacity="0.385" cx="100" cy="100"/>
         <g id="bub"><circle class="b1" cx="100" cy="100" r="9"/><circle class="b2" cx="100" cy="100" r="3"/></g>
       </svg>
-      <div class="tx"><div class="tc"><div class="sub">Pitch</div><div class="v" id="pv">--</div><div class="sub" id="pl">Tap to enable</div></div><div class="tc"><div class="sub">Roll</div><div class="v" id="rv">--</div><div class="sub" id="rl"></div></div></div></div>
+      <div class="tx"><div class="tc"><div class="sub">Pitch</div><div class="v" id="pv">--</div><div class="sub" id="pl">Tap to set level</div></div><div class="tc"><div class="sub">Roll</div><div class="v" id="rv">--</div><div class="sub" id="rl"></div></div></div></div>
   </div>
   <div class="side r">
     <div class="tile heading-tile"><div class="k">Heading</div><div class="v" id="head">–</div><button class="btn sm" id="savePlaceDash">Save Place</button></div>
@@ -88,7 +88,6 @@
 <div id="msg">Tap Start and allow location access.</div>
 <div class="bar">
   <button class="btn main" id="go">Start</button>
-  <button class="btn" id="lvl">Level</button>
   <button class="btn" id="bt"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 19V5h2v12h16v2H3Zm4-4 4-5 3 2 5-7 2 1-6 9-3-2-3 4H7Z" fill="currentColor"/><circle cx="19" cy="6" r="2" fill="currentColor"/></svg><span>Trips</span></button>
   <button class="btn" id="bm">Map</button>
   <button class="btn" id="bs">Settings</button>
@@ -110,16 +109,62 @@
 </section>
 
 <section class="screen ai-screen" id="scrTrips">
-  <div class="sh"><h2>Saved Trips</h2><button class="btn sm" id="ct" style="height:38px">Close</button></div>
-  <div class="trip-panel" id="savedTripsPanel">
-    <div class="sb" id="savedTripsList"><div class="tile"><div id="tl"></div></div></div>
-    <div class="sb" id="tripDetailPanel" hidden>
-      <div class="tile">
-        <div class="trip-detail-heading"><button class="btn sm" id="tripDetailBack">Saved trips</button><h3 id="tripDetailTitle">Trip details</h3></div>
-        <div id="aiReport"><p class="ai-muted">Choose a saved trip to view its details.</p></div>
-        <div class="trip-detail-actions">
-          <label class="row"><input type="checkbox" id="includeRoute"> Include exact route coordinates in exports and uploads</label>
-          <button class="btn sm" id="exportReport">Export report JSON</button>
+  <div class="sh"><h2>Trips</h2><button class="btn sm" id="ct" style="height:38px">Close</button></div>
+  <div class="trips-content">
+    <section class="trip-analytics" id="tripAnalytics" aria-labelledby="analyticsTitle">
+      <div class="trip-analytics-heading">
+        <h3 id="analyticsTitle">Drive analytics</h3>
+        <details class="score-help">
+          <summary aria-label="How are scores calculated?" title="How scores are calculated">?</summary>
+          <div class="score-help-content">
+            <b>Safety</b> is a 100-point rule-based score: speed discipline (35), braking (25), acceleration (20), cornering (10), and consistency (10), reduced by detected event rates.
+            <b>Performance</b> estimates control consistency: longitudinal smoothness (40), heading-change smoothness (35), and acceleration consistency (25), normalized over available reliable data.
+            Labels are Very consistent (90–100), Consistent (80–89), Developing (65–79), and Needs review (below 65).
+            Performance uses GPS-derived acceleration and heading changes; it is not lap time, grip, line quality or a race ranking.
+            Tarmac and dirt are manually selected session contexts: this version cannot detect surface type or surface-specific grip.
+            Scores need at least 30 reliable samples and 60% valid GPS/speed coverage. GPS-derived values may be noisy.
+            Distance windows combine trip-level scores by distance; a trip crossing a window is apportioned, not re-scored sample by sample.
+            Use racing feedback only on a closed course; never chase a score on public roads.
+          </div>
+        </details>
+      </div>
+      <div class="analytics-filters">
+        <label>Period
+          <select id="analyticsPeriod" aria-label="Analytics period">
+            <option value="day">Day</option><option value="month" selected>Month</option><option value="year">Year</option>
+          </select>
+        </label>
+        <label class="date-filter">Selected period
+          <input id="analyticsDate" type="month" aria-label="Selected month">
+        </label>
+        <label>Window (km)
+          <input id="distanceWindowKm" type="number" min="10" max="10000" step="10" value="100" inputmode="numeric">
+        </label>
+      </div>
+      <div class="analytics-view-toggle" id="analyticsViewToggle" role="group" aria-label="Score presentation">
+        <button type="button" class="on" data-analytics-view="compare" aria-pressed="true">Compare scores</button>
+        <button type="button" data-analytics-view="profile" aria-pressed="false">Driver profile</button>
+      </div>
+      <label class="profile-filter" id="profileFilter" hidden>Profile
+        <select id="scoreProfile">
+          <option value="safety">Safety</option>
+          <option value="tarmac">Tarmac racing context</option>
+          <option value="dirt">Dirt racing context</option>
+        </select>
+      </label>
+      <div id="analyticsResults" role="status" aria-live="polite">Loading saved trip analytics…</div>
+    </section>
+    <div class="trip-log-heading"><h3>Trip log</h3><span id="tripLogCount"></span></div>
+    <div class="trip-panel" id="savedTripsPanel">
+      <div class="sb" id="savedTripsList"><div class="tile"><div id="tl"></div></div></div>
+      <div class="sb" id="tripDetailPanel" hidden>
+        <div class="tile">
+          <div class="trip-detail-heading"><button class="btn sm" id="tripDetailBack">Trip log</button><h3 id="tripDetailTitle">Trip details</h3></div>
+          <div id="aiReport"><p class="ai-muted">Choose a saved trip to view its details.</p></div>
+          <div class="trip-detail-actions">
+            <label class="row"><input type="checkbox" id="includeRoute"> Include exact route coordinates in exports and uploads</label>
+            <button class="btn sm" id="exportReport">Export report JSON</button>
+          </div>
         </div>
       </div>
     </div>
@@ -148,9 +193,6 @@
     <div class="g2"><button class="btn sm" id="reset">Reset trip</button><button class="btn sm" id="hud" aria-pressed="false">HUD mirror: Off</button></div>
     <div class="tile"><div class="k">Trip reports</div><div class="sub">Select a trip from Saved Trips before uploading its report.</div><button class="btn sm main" id="reportToGitHub" style="margin-top:8px">Report to GitHub</button></div>
     <div class="tile"><div class="k">Simulation (no GPS)</div><div class="row"><select class="btn sm" id="scn" style="flex:1"><option value="city">City drive</option><option value="hwy">Highway</option><option value="jam">Stop and go</option></select><button class="btn sm" id="demo" style="flex:1">Run simulation</button></div></div>
-    <div class="g2"><button class="btn sm tg" id="invp">Invert pitch</button><button class="btn sm tg" id="invr">Invert roll</button></div>
-    <div class="tile"><div class="k">Phone mount (forward direction)</div><div class="row"><div class="seg" id="mnt"><button data-m="auto" class="on">Auto</button><button data-m="upright">Upright</button><button data-m="flat">Flat</button></div></div></div>
-    <div class="tile"><div class="k">Level reference</div><div class="sub" id="levelStatus">No saved level yet. Tap Level while stationary to set it.</div><button class="btn sm" id="bcal" style="margin-top:8px">Reset level</button></div>
     <button class="btn sm" id="bd">Debug logs</button>
     <div class="tile"><div class="k">Location</div><div class="v" id="coord" style="font-size:17px;white-space:normal">Waiting for GPS…</div><div class="sub" id="meta">Accuracy –</div><div id="dbg"></div><div style="margin-top:8px"><a id="maps" href="#" style="color:var(--acc);text-decoration:none;font-size:14px;font-weight:600">Open in Maps</a></div></div>
   </div>

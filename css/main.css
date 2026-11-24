@@ -169,6 +169,15 @@ input#lim {
   font-size: 12px;
 }
 
+#att[aria-pressed="true"] {
+  border-color: var(--acc);
+}
+
+#att:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+}
+
 .trip-detail-heading {
   display: flex;
   align-items: center;
@@ -206,6 +215,35 @@ input#lim {
   margin: 0;
 }
 
+.trips-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.trip-log-heading {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.trip-log-heading h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+#tripLogCount {
+  color: var(--mute);
+  font-size: 11px;
+}
+
 #savedTripsList[hidden],
 #tripDetailPanel[hidden] {
   display: none;
@@ -216,6 +254,7 @@ input#lim {
   flex: 1;
   min-height: 0;
   flex-direction: column;
+  width: 100%;
 }
 
 .report-field {
@@ -230,6 +269,6 @@ input#lim {
 
 @media (orientation: landscape) {
   .bar {
-    grid-template-columns: 1.2fr repeat(4, minmax(0, .8fr));
+    grid-template-columns: 1.2fr repeat(3, minmax(0, .8fr));
   }
 }
