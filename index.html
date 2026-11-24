@@ -62,11 +62,18 @@ body.hud #dash{transform:scaleY(-1)}
 .tx{flex:none;text-align:right;min-width:64px}
 .tilt .v{margin:0;font-size:clamp(22px,5.5vh,32px)}
 .tilt .sub{margin:0;font-size:11px}
-.cb{fill:rgba(46,230,166,.10);stroke:var(--text);stroke-width:2;stroke-linejoin:round}
-.tilt.warn .cb{stroke:var(--amb)}.tilt.bad .cb{stroke:var(--warn)}
-.cw{fill:#07090d;stroke:var(--text);stroke-width:2}
-.gl{stroke:#2a3644;stroke-width:2}
-.cg{transform-box:view-box;transition:transform .15s linear}
+.att{grid-column:1/-1}
+.att svg{flex:1;min-width:0;height:clamp(90px,26vh,160px)}
+.att .tx{min-width:84px}
+.att .tx .v{font-size:clamp(18px,4.6vh,26px)}
+.att .tx .sub{margin:0 0 6px;font-size:11px}
+.att.warn .tx .v{color:var(--amb)}.att.bad .tx .v{color:var(--warn)}
+.ah-sky{fill:#1d2a38}.ah-gnd{fill:#4a3f35}
+.ah-l{stroke:#fff;stroke-width:1.6;fill:none}
+.ah-t{fill:#fff;font-size:8px;font-weight:700;text-anchor:middle;font-family:inherit}
+.ah-ac{fill:none;stroke:#ffb020;stroke-width:3.5;stroke-linejoin:round}
+.ah-ptr{fill:#ffb020}
+#ahg,#ahr{transition:transform .12s linear}
 #msg{flex:none;font-size:11px;color:var(--mute);text-align:center;height:15px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .bar{flex:none;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:8px;margin-top:4px}
 .bar .btn{font-size:14px;padding:0 4px}.bar .btn.main{font-size:16px}
@@ -101,6 +108,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   #dash{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"l g r"}
   .side{display:flex;flex-direction:column}
   .side .tile{flex:1}
+  .att svg{height:100%}
   .btn{height:44px}
   .bar{grid-template-columns:1.6fr 1fr 1fr 1fr;max-width:620px;width:100%;margin:2px auto 0}
 }
@@ -108,7 +116,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
 </head>
 <body>
 <header>
-  <h1>SPEEDO<small>v7</small></h1>
+  <h1>SPEEDO<small>v8</small></h1>
   <div class="lights">
     <span class="li" id="lgps"><i></i>GPS</span>
     <span class="li" id="ltilt"><i></i>TILT</span>
@@ -151,12 +159,17 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   </div>
 
   <div class="side l">
-    <div class="tile tilt" id="tp"><div class="k">Pitch</div>
-      <svg viewBox="0 0 120 60"><line class="gl" x1="6" y1="52" x2="114" y2="52"/><g class="cg" id="carp" style="transform-origin:60px 44px"><path class="cb" d="M14 42V34Q14 30 20 29L38 27L48 17Q50 15 54 15H80Q84 15 87 18L96 28L104 30Q108 31 108 36V42Z"/><circle class="cw" cx="34" cy="44" r="8"/><circle class="cw" cx="88" cy="44" r="8"/></g></svg>
-      <div class="tx"><div class="v" id="pv">--</div><div class="sub" id="pl">Tap to enable</div></div></div>
-    <div class="tile tilt" id="tr"><div class="k">Roll</div>
-      <svg viewBox="0 0 120 60"><line class="gl" x1="6" y1="52" x2="114" y2="52"/><g class="cg" id="carr" style="transform-origin:60px 45px"><path class="cb" d="M32 40V30Q32 26 36 25L42 14Q44 11 48 11H72Q76 11 78 14L84 25Q88 26 88 30V40Z"/><rect class="cw" x="30" y="38" width="10" height="14" rx="2"/><rect class="cw" x="80" y="38" width="10" height="14" rx="2"/></g></svg>
-      <div class="tx"><div class="v" id="rv">--</div><div class="sub" id="rl">Tap to enable</div></div></div>
+    <div class="tile tilt att" id="att"><div class="k">Attitude</div>
+      <svg viewBox="0 0 200 200" aria-label="Attitude indicator"><defs><clipPath id="ahc"><circle cx="100" cy="100" r="88"/></clipPath></defs>
+        <g clip-path="url(#ahc)"><g id="ahg" style="transform-origin:100px 100px">
+          <rect class="ah-sky" x="-100" y="-300" width="400" height="400"/><rect class="ah-gnd" x="-100" y="100" width="400" height="400"/>
+          <line class="ah-l" x1="-100" y1="100" x2="300" y2="100" style="stroke-width:2.4"/><line class="ah-l" x1="87" y1="148" x2="113" y2="148"/><text class="ah-t" x="79" y="151">20</text><text class="ah-t" x="121" y="151">20</text><line class="ah-l" x1="93" y1="136" x2="107" y2="136"/><line class="ah-l" x1="87" y1="124" x2="113" y2="124"/><text class="ah-t" x="79" y="127">10</text><text class="ah-t" x="121" y="127">10</text><line class="ah-l" x1="93" y1="112" x2="107" y2="112"/><line class="ah-l" x1="93" y1="88" x2="107" y2="88"/><line class="ah-l" x1="87" y1="76" x2="113" y2="76"/><text class="ah-t" x="79" y="79">10</text><text class="ah-t" x="121" y="79">10</text><line class="ah-l" x1="93" y1="64" x2="107" y2="64"/><line class="ah-l" x1="87" y1="52" x2="113" y2="52"/><text class="ah-t" x="79" y="55">20</text><text class="ah-t" x="121" y="55">20</text></g></g>
+        <g id="ahr" style="transform-origin:100px 100px"><line class="ah-l" x1="100" y1="14" x2="100" y2="24" transform="rotate(-60 100 100)"/><line class="ah-l" x1="100" y1="14" x2="100" y2="20" transform="rotate(-45 100 100)"/><line class="ah-l" x1="100" y1="14" x2="100" y2="24" transform="rotate(-30 100 100)"/><line class="ah-l" x1="100" y1="14" x2="100" y2="20" transform="rotate(-20 100 100)"/><line class="ah-l" x1="100" y1="14" x2="100" y2="20" transform="rotate(-10 100 100)"/><line class="ah-l" x1="100" y1="14" x2="100" y2="24" transform="rotate(0 100 100)"/><line class="ah-l" x1="100" y1="14" x2="100" y2="20" transform="rotate(10 100 100)"/><line class="ah-l" x1="100" y1="14" x2="100" y2="20" transform="rotate(20 100 100)"/><line class="ah-l" x1="100" y1="14" x2="100" y2="24" transform="rotate(30 100 100)"/><line class="ah-l" x1="100" y1="14" x2="100" y2="24" transform="rotate(45 100 100)"/><line class="ah-l" x1="100" y1="14" x2="100" y2="24" transform="rotate(60 100 100)"/></g>
+        <circle cx="100" cy="100" r="88" fill="none" stroke="#7d8a99" stroke-width="2"/>
+        <path class="ah-ptr" d="M100 13L94 3H106Z"/>
+        <path class="ah-ac" d="M58 100H86L100 112L114 100H142"/><circle cx="100" cy="100" r="2.6" fill="#ffb020"/>
+      </svg>
+      <div class="tx"><div class="sub">Pitch</div><div class="v" id="pv">--</div><div class="sub" id="pl">Tap to enable</div><div class="sub">Roll</div><div class="v" id="rv">--</div><div class="sub" id="rl"></div></div></div>
   </div>
   <div class="side r">
     <div class="tile"><div class="k">Heading</div><div class="hrow"><svg class="ring" viewBox="0 0 100 100"><g id="ringg"><circle cx="50" cy="50" r="40" fill="none" stroke="#2a3644" stroke-width="2"/><g font-size="15" font-weight="700" text-anchor="middle" style="fill:var(--text)"><text x="50" y="30" style="fill:var(--warn)">N</text><text x="50" y="30" transform="rotate(90 50 50)">E</text><text x="50" y="30" transform="rotate(180 50 50)">S</text><text x="50" y="30" transform="rotate(270 50 50)">W</text></g></g><path d="M50 1L57 13H43Z" fill="var(--acc)"/></svg><div class="v" id="head">–</div></div></div>
@@ -192,6 +205,8 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
     <div class="g2"><button class="btn sm tg" id="bosm">OSM limits</button><button class="btn sm tg" id="bcam">Camera alerts</button></div>
     <div class="g2"><button class="btn sm" id="reset">Reset trip</button><button class="btn sm" id="hud">HUD mirror</button></div>
     <div class="tile"><div class="k">Simulation (no GPS)</div><div class="row"><select class="btn sm" id="scn" style="flex:1"><option value="city">City drive</option><option value="hwy">Highway</option><option value="jam">Stop and go</option></select><button class="btn sm" id="demo" style="flex:1">Run simulation</button></div></div>
+    <div class="g2"><button class="btn sm tg" id="invp">Invert pitch</button><button class="btn sm tg" id="invr">Invert roll</button></div>
+    <div class="tile"><div class="k">Phone mount (forward direction)</div><div class="row"><div class="seg" id="mnt"><button data-m="auto" class="on">Auto</button><button data-m="upright">Upright</button><button data-m="flat">Flat</button></div></div></div>
     <button class="btn sm" id="bcal">Calibrate level</button>
     <button class="btn sm" id="bd">Debug logs</button>
     <div class="tile"><div class="k">Location</div><div class="v" id="coord" style="font-size:17px;white-space:normal">Waiting for GPS…</div><div class="sub" id="meta">Accuracy –</div><div id="dbg"></div><div style="margin-top:8px"><a id="maps" href="#" style="color:var(--acc);text-decoration:none;font-size:14px;font-weight:600">Open in Maps</a></div></div>
@@ -222,7 +237,7 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   var $=function(id){return document.getElementById(id)};
   var MAXV=240;
   var S={max:0,dist:0,moving:0,t0:0,last:null,watch:null,run:false,wake:null,demo:null,tick:null,v:0,hist:[],pts:[],ended:false,al:false,lim:60,lastBeep:0,lastPt:0,fixes:0,lastFix:0,raw:null,sim:false,view:'digital',over:false};
-  var VER='v7';
+  var VER='v8';
   // ---- Logging: IndexedDB ring buffer ----
   var LG={db:null,q:[],MAX:6000,fail:false};
   function L(k,d){
@@ -640,7 +655,9 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   }
 
   // ---- Tilt (pitch / roll), calibrated to level ----
-  var T={state:'off',listening:false,u:null,su:null,cal:null,samples:[],t0:0,p:0,r:0,sp:0,sr:0};
+  var T={state:'off',listening:false,u:null,su:null,cal:null,samples:[],t0:0,p:0,r:0,sp:0,sr:0,ip:false,ir:false,mount:'auto'};
+  try{var ti=JSON.parse(localStorage.getItem('speedo.tilt')||'{}');T.ip=!!ti.ip;T.ir=!!ti.ir;if(ti.m==='upright'||ti.m==='flat')T.mount=ti.m}catch(e){}
+  function saveTilt(){try{localStorage.setItem('speedo.tilt',JSON.stringify({ip:T.ip,ir:T.ir,m:T.mount}))}catch(e){}}
   var vd=function(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]};
   var vn=function(a){var l=Math.sqrt(vd(a,a))||1;return [a[0]/l,a[1]/l,a[2]/l]};
   var vx=function(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]};
@@ -669,30 +686,38 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
   }
   function finishCal(){
     var a=[0,0,0];T.samples.forEach(function(u){a[0]+=u[0];a[1]+=u[1];a[2]+=u[2]});
-    var u0=vn(a),flat=Math.abs(u0[2])>0.8,f;
+    var u0=vn(a),flat=T.mount==='flat'?true:T.mount==='upright'?false:Math.abs(u0[2])>0.8,f;
     if(flat){var ang=(screen.orientation&&screen.orientation.angle!=null)?screen.orientation.angle:(window.orientation||0);ang=((ang%360)+360)%360;f=[[0,1,0],[1,0,0],[0,-1,0],[-1,0,0]][Math.round(ang/90)%4]}   // flat: top of screen points forward
     else f=[0,0,-1];                                                                                                                                  // upright: screen faces driver, so forward is into the screen
     var d=vd(f,u0);f=vn([f[0]-d*u0[0],f[1]-d*u0[1],f[2]-d*u0[2]]);
     T.cal={u:u0,f:f,r:vx(f,u0)};T.state='ok';
-    L('tilt',{cal:u0.map(function(x){return +x.toFixed(3)}),mount:flat?'flat':'upright'});
+    L('tilt',{cal:u0.map(function(x){return +x.toFixed(3)}),f:f.map(function(x){return +x.toFixed(3)}),mount:flat?'flat':'upright',mset:T.mount,ip:T.ip?1:0,ir:T.ir?1:0});
     $('msg').textContent='Level set. Tilt is live.';
   }
-  function setCar(id,deg,pre){
-    $(id).style.transform='rotate('+deg.toFixed(1)+'deg)';
+  var AHK=2.4;
+  function setAtt(p,r){
+    // standard convention: nose up -> horizon moves DOWN; lean right -> horizon turns counter-clockwise
+    var pc=Math.max(-40,Math.min(40,p));
+    $('ahg').style.transform='rotate('+(-r).toFixed(1)+'deg) translateY('+(pc*AHK).toFixed(1)+'px)';
+    $('ahr').style.transform='rotate('+(-r).toFixed(1)+'deg)';
   }
   function tiltUI(){
-    var st=T.state,ok=S.sim||st==='ok',p=T.p,r=T.r;
+    var st=T.state,ok=S.sim||st==='ok',p=T.p,r=T.r,el=$('att');
     if(S.sim){p=T.sp;r=T.sr}
     tiltLight();
-    [['p',p,'Nose up','Nose down','carp',-1],['r',r,'Lean right','Lean left','carr',1]].forEach(function(x){
-      var el=$('t'+x[0]),a=x[1];
-      if(!ok){$(x[0]+'v').textContent='--';$(x[0]+'l').textContent=st==='cal'?'Calibrating…':st==='denied'?'Access denied':st==='none'?'No sensor':st==='wait'?'Starting…':'Tap to enable';el.className='tile tilt';setCar(x[4],0);return}
-      var m=Math.abs(a);
-      $(x[0]+'v').textContent=Math.round(m)+'°';
-      $(x[0]+'l').textContent=m<1.5?'Level':a>0?x[2]:x[3];
-      el.className='tile tilt'+(m>=30?' bad':m>=20?' warn':'');
-      setCar(x[4],Math.max(-60,Math.min(60,a))*x[5]);
-    });
+    if(!ok){
+      $('pv').textContent='--';$('rv').textContent='--';
+      $('pl').textContent=st==='cal'?'Calibrating…':st==='denied'?'Access denied':st==='none'?'No sensor':st==='wait'?'Starting…':'Tap to enable';
+      $('rl').textContent='';el.className='tile tilt att';setAtt(0,0);return;
+    }
+    if(T.ip)p=-p;if(T.ir)r=-r;
+    var mp=Math.abs(p),mr=Math.abs(r),m=Math.max(mp,mr);
+    $('pv').textContent=(mp<0.5?'':p>0?'+':'\u2212')+Math.round(mp)+'\u00b0';
+    $('rv').textContent=(mr<0.5?'':r>0?'+':'\u2212')+Math.round(mr)+'\u00b0';
+    $('pl').textContent=mp<1.5?'Level':p>0?'Nose up':'Nose down';
+    $('rl').textContent=mr<1.5?'Level':r>0?'Lean right':'Lean left';
+    el.className='tile tilt att'+(m>=30?' bad':m>=20?' warn':'');
+    setAtt(p,r);
   }
   setInterval(function(){
     if(T.u){T.su=T.su?[T.su[0]+.35*(T.u[0]-T.su[0]),T.su[1]+.35*(T.u[1]-T.su[1]),T.su[2]+.35*(T.u[2]-T.su[2])]:T.u.slice()}
@@ -715,9 +740,15 @@ body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);
     T.state='off';T.u=T.su=T.cal=null;
   }
   function enableTilt(){askTilt().then(calibrate)}
-  $('tp').onclick=$('tr').onclick=function(){if(!S.sim&&(T.state==='off'||T.state==='denied'||T.state==='none'))enableTilt()};
+  $('att').onclick=function(){if(!S.sim&&(T.state==='off'||T.state==='denied'||T.state==='none'))enableTilt()};
   $('lvl').onclick=function(){if(S.sim){$('msg').textContent='Level is not used in simulation.';return}enableTilt()};
   $('bcal').onclick=function(){closeScr('scrSet');enableTilt()};
+  function tiltSet(){$('invp').classList.toggle('on',T.ip);$('invr').classList.toggle('on',T.ir);
+    [].forEach.call($('mnt').children,function(b){b.classList.toggle('on',b.dataset.m===T.mount)})}
+  $('invp').onclick=function(){T.ip=!T.ip;saveTilt();tiltSet();L('tilt',{invp:T.ip?1:0})};
+  $('invr').onclick=function(){T.ir=!T.ir;saveTilt();tiltSet();L('tilt',{invr:T.ir?1:0})};
+  [].forEach.call($('mnt').children,function(b){b.onclick=function(){T.mount=b.dataset.m;saveTilt();tiltSet();L('tilt',{mount:T.mount});if(T.state==='ok')enableTilt()}});
+  tiltSet();
 
   // ---- Debug screen ----
   var BK='speedo.blur';
