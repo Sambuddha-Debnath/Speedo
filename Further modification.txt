@@ -1,0 +1,7 @@
+-in potrait mode, the buttons are not centered.
+-in trips, the tabs are overlapping on each other. the annalytics are not showing in an user friedly way - new ai approach is: (new si approach) 
+-under settings, the report to github is not reporting all the logs present. It is supposed to log the unique trips to the github logs(the uniqueness is based on the ones present in the log file). the report should have enough details to map the locaton, elevation, speed and direction in the simulation or in the test to run later.
+-run simulation is either supposed to run through all the trips in 5x speed or pick up random trip and run it in 5x or 10x.
+- Ui should be cleaner, the speedometer should be cleaner with lines in a minimal speedometer fashion. You can refer to the one that was there when the background was off-white. Bring back that style of design in case of the speedo.
+
+
