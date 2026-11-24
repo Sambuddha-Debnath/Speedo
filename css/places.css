@@ -1,0 +1,47 @@
+.places-list {
+  display: grid;
+  gap: 8px;
+}
+
+.place-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.place-card strong,
+.place-card small {
+  display: block;
+}
+
+.place-card small,
+.place-card p {
+  margin: 4px 0 0;
+  color: var(--mute);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.place-actions {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+
+.place-actions .btn {
+  height: 36px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+@media (max-width: 390px) {
+  .place-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

@@ -1,14 +1,203 @@
-<!doctype html><meta charset="utf-8"><title>SPEEDO AI unit tests</title>
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPEEDO v11 browser tests</title>
+<body>
+<h1>SPEEDO v11 browser tests</h1>
 <pre id="out">Running…</pre>
 <script type="module">
 import { normaliseSample, featureVector } from '../js/ai/data-processor.js';
 import { detectEvents } from '../js/ai/event-detector.js';
 import { calculateScore } from '../js/ai/scoring-engine.js';
-const results=[];function test(name,fn){try{fn();results.push('PASS '+name)}catch(e){results.push('FAIL '+name+': '+e.message)}}
-const sample=(t,v,limit=60)=>normaliseSample({timestamp:t,gps:{latitude:12.97+t/1e8,longitude:77.59,accuracy:5},vehicle:{speed:v,heading:90,altitude:900},road:{speedLimit:limit},quality:{gpsValid:true,speedValid:true}});
-test('normalises missing sensor values to null',()=>{const s=normaliseSample({});if(s.vehicle.speed!==null)throw Error('expected null speed')});
-test('feature extractor computes acceleration',()=>{const f=featureVector([sample(1000,36),sample(2000,46)]);if(Math.abs(f[1].accelerationMps2-2.7778)>.01)throw Error('wrong acceleration')});
-test('detects overspeed with mapped limit',()=>{const e=detectEvents([sample(1000,50),sample(2000,80)]);if(!e.some(x=>x.eventType==='overspeed'))throw Error('no overspeed event')});
-test('does not score insufficient data',()=>{const r=calculateScore([sample(1000,20)],[]);if(r.score!==null)throw Error('should be insufficient')});
-const out=document.getElementById('out');out.textContent=results.join('\n');
+import { tripMetrics } from '../js/ai/trip-analysis.js';
+import { uploadTripReport } from '../js/reports/github-upload.js';
+
+const results = [];
+function test(name, fn) {
+  try {
+    fn();
+    results.push(`PASS ${name}`);
+  } catch (error) {
+    results.push(`FAIL ${name}: ${error.message}`);
+  }
+}
+async function testAsync(name, fn) {
+  try {
+    await fn();
+    results.push(`PASS ${name}`);
+  } catch (error) {
+    results.push(`FAIL ${name}: ${error.message}`);
+  }
+}
+
+const sample = (timestamp, speed, options = {}) => normaliseSample({
+  timestamp,
+  gps: {
+    latitude: 12.97 + timestamp / 100000000,
+    longitude: 77.59,
+    accuracy: options.accuracy ?? 5
+  },
+  vehicle: { speed, heading: options.heading ?? 90, altitude: options.altitude ?? 900, gradient: options.gradient ?? null },
+  road: { speedLimit: options.speedLimit ?? 60 },
+  quality: { gpsValid: options.gpsValid, speedValid: options.speedValid }
+});
+
+test('preserves missing sensor values as null', () => {
+  const value = normaliseSample({ gps: { latitude: null, accuracy: null }, vehicle: { speed: null } });
+  if (value.vehicle.speed !== null || value.gps.latitude !== null || value.gps.accuracy !== null) {
+    throw new Error('missing values must not become numeric zero');
+  }
+});
+test('preserves a zero timestamp', () => {
+  if (normaliseSample({ timestamp: 0 }).timestamp !== 0) throw new Error('zero timestamp changed');
+});
+test('requires coordinates as well as accuracy for a GPS-valid fix', () => {
+  const value = normaliseSample({ gps: { accuracy: 5 }, vehicle: { speed: 20 } });
+  if (value.quality.gpsValid) throw new Error('fix without coordinates was considered reliable');
+});
+test('feature extraction calculates acceleration', () => {
+  const features = featureVector([sample(1000, 36), sample(2000, 46)]);
+  if (Math.abs(features[1].accelerationMps2 - 2.7778) > 0.01) throw new Error('wrong acceleration');
+});
+test('detects mapped-limit overspeed and includes a reliable location', () => {
+  const events = detectEvents([sample(1000, 50, { speedLimit: 40 }), sample(2000, 80, { speedLimit: 40 })]);
+  const overspeed = events.find(event => event.eventType === 'overspeed');
+  if (!overspeed || !overspeed.location || overspeed.confidence <= 0) throw new Error('overspeed event details missing');
+});
+test('rejects events when GPS accuracy is poor', () => {
+  const events = detectEvents([sample(1000, 50, { accuracy: 80 }), sample(2000, 90, { accuracy: 80 })]);
+  if (!events.some(event => event.eventType === 'gps_anomaly')) throw new Error('GPS anomaly was not reported');
+});
+test('detects hard acceleration and braking as estimates', () => {
+  const acceleration = detectEvents([sample(1000, 20), sample(2000, 40)]);
+  const braking = detectEvents([sample(1000, 60), sample(2000, 40)]);
+  if (!acceleration.some(event => event.eventType === 'possible_harsh_acceleration')) throw new Error('acceleration event missing');
+  if (!braking.some(event => event.eventType === 'possible_harsh_braking')) throw new Error('braking event missing');
+});
+test('flags continuous prolonged overspeed', () => {
+  const samples = Array.from({ length: 62 }, (_, index) => sample(1000 + index * 1000, 80, { speedLimit: 60 }));
+  if (!detectEvents(samples).some(event => event.eventType === 'prolonged_overspeed')) throw new Error('prolonged overspeed event missing');
+});
+test('does not score insufficient data', () => {
+  const result = calculateScore([sample(1000, 20)], []);
+  if (result.score !== null) throw new Error('should be insufficient');
+});
+test('scores a sufficiently covered trip with transparent components', () => {
+  const samples = Array.from({ length: 40 }, (_, index) => sample(1000 + index * 1000, 40));
+  const result = calculateScore(samples, []);
+  if (result.score === null || !result.components || result.coverage !== 100) throw new Error('valid trip score missing');
+});
+test('trip summary reports moving time, elevation, overspeed and quality', () => {
+  const samples = [
+    sample(1000, 36, { altitude: 100, speedLimit: 30, gradient: -3 }),
+    sample(2000, 40, { altitude: 104, speedLimit: 30, gradient: 4 }),
+    sample(3000, 0, { altitude: 99, speedLimit: 30 })
+  ];
+  const metrics = tripMetrics(samples);
+  if (metrics.movingTimeSeconds !== 1 || metrics.stationaryTimeSeconds !== 1) throw new Error('incorrect movement time');
+  if (metrics.elevation.gainM !== 4 || metrics.elevation.lossM !== 5) throw new Error('incorrect elevation totals');
+  if (metrics.overspeedDurationSeconds !== 1 || metrics.gpsQuality.coveragePercent !== 100) throw new Error('incorrect quality or overspeed summary');
+  if (metrics.gradient.minimumPercent !== -3 || metrics.gradient.maximumPercent !== 4) throw new Error('incorrect gradient range');
+});
+
+await testAsync('report upload rejects missing credentials and malformed repositories', async () => {
+  const report = { tripId: 'trip-test', events: [] };
+  for (const input of [
+    { repository: 'owner/repo', token: '' },
+    { repository: 'not/a/repository/path', token: 'test-token' }
+  ]) {
+    let rejected = false;
+    try {
+      await uploadTripReport({ ...input, report, includeRoute: false, samples: [] });
+    } catch {
+      rejected = true;
+    }
+    if (!rejected) throw new Error('invalid upload configuration was accepted');
+  }
+});
+
+await testAsync('report upload surfaces authentication and permission failures', async () => {
+  const originalFetch = globalThis.fetch;
+  const response = (status, message) => ({ ok: false, status, json: async () => ({ message }) });
+  const report = { tripId: 'trip-test', events: [] };
+  try {
+    globalThis.fetch = async () => response(401, 'Bad credentials');
+    let authRejected = false;
+    try {
+      await uploadTripReport({ repository: 'owner/repo', token: 'bad-token', report, includeRoute: false, samples: [] });
+    } catch (error) {
+      authRejected = error.message.includes('401');
+    }
+    if (!authRejected) throw new Error('authentication error was not shown');
+
+    globalThis.fetch = async (_url, options = {}) => options.method === 'PUT'
+      ? response(403, 'Resource not accessible by integration')
+      : response(404, 'Not Found');
+    let permissionRejected = false;
+    try {
+      await uploadTripReport({ repository: 'owner/repo', token: 'read-only-token', report, includeRoute: false, samples: [] });
+    } catch (error) {
+      permissionRejected = error.message.includes('403');
+    }
+    if (!permissionRejected) throw new Error('permission failure was not shown');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+await testAsync('report upload does not overwrite duplicates and omits route by default', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  const ok = (status, body = {}) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
+  const report = {
+    tripId: 'trip-test',
+    simulated: false,
+    score: 90,
+    scoreLabel: 'Consistent',
+    scoreDetails: {},
+    metrics: {},
+    events: [{ eventType: 'overspeed', location: { latitude: 12, longitude: 77 } }]
+  };
+  const samples = [sample(1000, 40)];
+  try {
+    globalThis.fetch = async (url, options = {}) => {
+      calls.push({ url, options });
+      if (options.method === 'PUT') return ok(201, { content: { path: 'reports/trip-test.json' } });
+      return ok(404, { message: 'Not Found' });
+    };
+    const result = await uploadTripReport({
+      repository: 'owner/repo', token: 'test-token', report, includeRoute: false, samples
+    });
+    if (result.content.path !== 'reports/trip-test.json') throw new Error('upload result missing');
+    const request = calls.find(call => call.options.method === 'PUT');
+    const bytes = Uint8Array.from(atob(JSON.parse(request.options.body).content), char => char.charCodeAt(0));
+    const payload = JSON.parse(new TextDecoder().decode(bytes));
+    if (payload.route || payload.trip.events[0].location || payload.locationCoordinatesIncluded) {
+      throw new Error('coordinates were included without consent');
+    }
+
+    calls.length = 0;
+    globalThis.fetch = async (url, options = {}) => {
+      calls.push({ url, options });
+      return ok(200, { content: { path: 'reports/trip-test.json' } });
+    };
+    let duplicateRejected = false;
+    try {
+      await uploadTripReport({ repository: 'owner/repo', token: 'test-token', report, includeRoute: false, samples });
+    } catch (error) {
+      duplicateRejected = error.message.includes('already exists');
+    }
+    if (!duplicateRejected || calls.some(call => call.options.method === 'PUT')) {
+      throw new Error('duplicate report was overwritten or not rejected');
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+document.getElementById('out').textContent = results.join('\n')
+  + `\n\n${results.filter(result => result.startsWith('PASS')).length}/${results.length} passed`;
 </script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+#scrMap {
+  gap: 8px;
+}
+
+#liveMap {
+  flex: 1;
+  min-height: 180px;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #111315;
+  isolation: isolate;
+}
+
+.map-status {
+  flex: none;
+  min-height: 18px;
+  color: var(--mute);
+  font-size: 12px;
+}
+
+.map-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.map-actions .btn {
+  min-width: 92px;
+}
+
+.map-footer {
+  flex: none;
+  justify-content: center;
+  padding-bottom: max(3px, env(safe-area-inset-bottom));
+}
+
+.vehicle-icon-wrap {
+  border: 0;
+  background: transparent;
+}
+
+.vehicle-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 2px solid #090a0b;
+  border-radius: 50%;
+  background: var(--acc);
+  color: #090a0b;
+  font-size: 22px;
+  filter: drop-shadow(0 2px 4px #0009);
+}
+
+.leaflet-container {
+  font: inherit;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #111315;
+  color: var(--text);
+}
+
+.leaflet-control-attribution {
+  font-size: 9px !important;
+}

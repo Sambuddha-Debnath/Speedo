@@ -6,7 +6,8 @@ export function calculateScore(samples, events) {
   const moving=valid.filter(s=>(s.vehicle.speed||0)>8); const distance=estimateDistance(valid); let movingSeconds=0; for(let i=1;i<valid.length;i++){const dt=(valid[i].timestamp-valid[i-1].timestamp)/1000;if(dt>0&&dt<=5&&(valid[i].vehicle.speed||0)>8)movingSeconds+=dt;} const hours=Math.max(1/3600,movingSeconds/3600);
   const rate=(type)=>events.filter(e=>e.eventType===type).length/Math.max(0.1,distance/1000);
   const over=events.filter(e=>e.eventType==='overspeed').length;
-  const components={speedDiscipline:clamp(35-over*2.5),braking:clamp(25-rate('possible_harsh_braking')*7),acceleration:clamp(20-rate('possible_harsh_acceleration')*5),cornering:clamp(10-rate('possible_sharp_corner')*3),consistency:clamp(10-(Math.max(0,standardDeviation(moving.map(s=>s.vehicle.speed||0))-12)*0.35))};
+  const prolongedOver=events.filter(e=>e.eventType==='prolonged_overspeed').length;
+  const components={speedDiscipline:clamp(35-over*2.5-prolongedOver*5),braking:clamp(25-rate('possible_harsh_braking')*7),acceleration:clamp(20-rate('possible_harsh_acceleration')*5),cornering:clamp(10-rate('possible_sharp_corner')*3),consistency:clamp(10-(Math.max(0,standardDeviation(moving.map(s=>s.vehicle.speed||0))-12)*0.35))};
   const score=Math.round(components.speedDiscipline+components.braking+components.acceleration+components.cornering+components.consistency);
   return {score,label:score>=90?'Very consistent':score>=80?'Consistent':score>=65?'Developing':'Needs review',coverage:Math.round(coverage*100),components,distanceKm:Number((distance/1000).toFixed(2)),movingSamples:moving.length,eventRatePer100Km:Number((events.length/Math.max(0.1,distance/1000)).toFixed(1)),confidence:coverage>=0.85?'good':'limited',durationHours:Number(hours.toFixed(2))};
 }

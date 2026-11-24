@@ -1,0 +1,92 @@
+.ai-screen .sb {
+  padding-bottom: 12px;
+}
+
+.ai-report-score strong {
+  color: var(--acc);
+}
+
+.report-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.report-actions[hidden] {
+  display: none;
+}
+
+.report-actions .row {
+  align-items: flex-start;
+  font-size: 12px;
+  color: var(--mute);
+}
+
+.report-actions input[type="checkbox"] {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+.report-field {
+  display: block;
+  color: var(--mute);
+  font-size: 12px;
+}
+
+.report-field .txt {
+  margin-top: 5px;
+}
+
+.report-chart {
+  display: block;
+  width: 100%;
+  height: 96px;
+  margin-top: 8px;
+  overflow: visible;
+}
+
+.report-chart .chart-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.report-chart .chart-line {
+  fill: none;
+  stroke: var(--acc);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.report-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.report-metric {
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #090a0b;
+}
+
+.report-metric small,
+.report-metric strong {
+  display: block;
+}
+
+.report-metric small {
+  color: var(--mute);
+  font-size: 10px;
+}
+
+.report-metric strong {
+  margin-top: 3px;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}

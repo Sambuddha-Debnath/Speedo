@@ -1,0 +1,37 @@
+@media (max-width: 390px) {
+  body {
+    padding-right: max(8px, env(safe-area-inset-right));
+    padding-left: max(8px, env(safe-area-inset-left));
+  }
+
+  #dash {
+    gap: 7px;
+  }
+
+  .bar {
+    gap: 4px;
+  }
+
+  .bar .btn {
+    border-radius: 12px;
+  }
+
+  .att .tx {
+    min-width: 82px;
+  }
+
+  .att .tx .v {
+    font-size: clamp(20px, 6vw, 27px);
+  }
+}
+
+@media (orientation: landscape) {
+  .bar {
+    max-width: 680px;
+  }
+
+  .bar .btn,
+  .bar .btn.main {
+    height: 54px !important;
+  }
+}

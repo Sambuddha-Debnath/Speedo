@@ -1,17 +1,32 @@
-const finite = v => Number.isFinite(Number(v)) ? Number(v) : null;
+const finite = value => {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+};
 export function normaliseSample(raw) {
   const gps = raw.gps || {};
   const vehicle = raw.vehicle || {};
   const motion = raw.motion || {};
   const road = raw.road || {};
   const quality = raw.quality || {};
+  const latitude = finite(gps.latitude);
+  const longitude = finite(gps.longitude);
+  const accuracy = finite(gps.accuracy);
+  const speed = finite(vehicle.speed);
   return {
-    timestamp: finite(raw.timestamp) || Date.now(),
-    gps: { latitude: finite(gps.latitude), longitude: finite(gps.longitude), accuracy: finite(gps.accuracy) },
-    vehicle: { speed: finite(vehicle.speed), heading: finite(vehicle.heading), altitude: finite(vehicle.altitude), gradient: finite(vehicle.gradient) },
+    timestamp: finite(raw.timestamp) ?? Date.now(),
+    gps: { latitude, longitude, accuracy },
+    vehicle: { speed, heading: finite(vehicle.heading), altitude: finite(vehicle.altitude), gradient: finite(vehicle.gradient) },
     motion: { pitch: finite(motion.pitch), roll: finite(motion.roll), accelerationX: finite(motion.accelerationX), accelerationY: finite(motion.accelerationY), accelerationZ: finite(motion.accelerationZ) },
     road: { speedLimit: finite(road.speedLimit), speedLimitSource: road.speedLimitSource || null },
-    quality: { gpsValid: quality.gpsValid !== false && finite(gps.accuracy) !== null && finite(gps.accuracy) <= 40, speedValid: quality.speedValid !== false && finite(vehicle.speed) !== null && finite(vehicle.speed) >= 0 && finite(vehicle.speed) <= 250, motionValid: quality.motionValid === true }
+    quality: {
+      gpsValid: quality.gpsValid !== false
+        && latitude !== null && latitude >= -90 && latitude <= 90
+        && longitude !== null && longitude >= -180 && longitude <= 180
+        && accuracy !== null && accuracy >= 0 && accuracy <= 40,
+      speedValid: quality.speedValid !== false && speed !== null && speed >= 0 && speed <= 250,
+      motionValid: quality.motionValid === true
+    }
   };
 }
 export function featureVector(samples) {

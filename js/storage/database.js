@@ -1,12 +1,13 @@
 const DB_NAME = 'speedo-ai';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORES = {
   trips: { keyPath: 'tripId', indexes: ['startTime', 'status'] },
   tripSamples: { keyPath: 'sampleId', indexes: ['tripId', 'timestamp'] },
   drivingEvents: { keyPath: 'eventId', indexes: ['tripId', 'eventType', 'timestamp'] },
   tripReports: { keyPath: 'tripId', indexes: ['score', 'createdAt'] },
   driverProfile: { keyPath: 'profileId', indexes: ['updatedAt'] },
-  modelMetadata: { keyPath: 'modelId', indexes: ['status'] }
+  modelMetadata: { keyPath: 'modelId', indexes: ['status'] },
+  places: { keyPath: 'placeId', indexes: ['createdAt', 'category'] }
 };
 let dbPromise;
 export function openSpeedoDB() {
