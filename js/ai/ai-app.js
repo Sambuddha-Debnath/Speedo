@@ -180,6 +180,10 @@ async function uploadSelectedReport() {
 }
 
 function setup() {
+  window.addEventListener('speedo:trips-open', () => {
+    $('savedTripsList').hidden = false;
+    $('tripDetailPanel').hidden = true;
+  });
   window.addEventListener('speedo:trip-detail-request', event => {
     const tripId = event.detail?.tripId;
     if (!tripId) return;
@@ -206,6 +210,10 @@ function setup() {
   $('reportToGitHub')?.addEventListener('click', () => {
     if (!selectedReport) {
       window.alert('Open a saved trip with an available report first.');
+      return;
+    }
+    if (selectedReport.simulated) {
+      window.alert('Simulated test trips stay on this device and cannot be uploaded.');
       return;
     }
     $('scrReport').classList.add('open');

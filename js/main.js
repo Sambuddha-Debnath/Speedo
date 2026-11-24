@@ -1,7 +1,10 @@
+import { uniqueUploadableLogs } from './logs/upload-filter.js';
+
 (function(){
   var $=function(id){return document.getElementById(id)};
   var MAXV=240;
   var S={max:0,dist:0,moving:0,t0:0,last:null,watch:null,run:false,wake:null,demo:null,tick:null,v:0,pts:[],ended:false,al:false,lim:60,lastBeep:0,lastPt:0,fixes:0,lastFix:0,raw:null,sim:false,view:'digital',over:false};
+  var motionAlertTimer=null;
   var VER='SPEEDO v11';
   // ---- Logging: IndexedDB ring buffer ----
   var LG={db:null,q:[],MAX:6000,fail:false};
@@ -251,6 +254,16 @@
     S.over=over;
     if(over&&Date.now()-S.lastBeep>3000){S.lastBeep=Date.now();beep();try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}}
   }
+  window.addEventListener('speedo-ai-live-events',function(e){
+    var events=Array.isArray(e.detail)?e.detail:[];
+    var motion=events.filter(function(event){return event.eventType==='possible_harsh_acceleration'||event.eventType==='possible_harsh_braking'});
+    if(!motion.length)return;
+    var high=motion.some(function(event){return event.severity==='high'})||document.body.classList.contains('motion-high');
+    document.body.classList.toggle('motion-high',high);
+    document.body.classList.toggle('motion-medium',!high);
+    clearTimeout(motionAlertTimer);
+    motionAlertTimer=setTimeout(function(){document.body.classList.remove('motion-medium','motion-high')},3000);
+  });
   $('alert').onclick=function(){S.al=!S.al;if(S.al)beep();syncAl();saveAl();render()};
   $('lim').oninput=function(){var n=parseInt(this.value,10);if(n>=10&&n<=240){S.lim=n;saveAl();drawSign()}};
 
@@ -411,11 +424,28 @@
 
   // ---- Tilt (pitch / roll), calibrated to level ----
   var T={state:'off',listening:false,u:null,su:null,cal:null,samples:[],t0:0,p:0,r:0,sp:0,sr:0,ip:false,ir:false,mount:'auto'};
-  try{var ti=JSON.parse(localStorage.getItem('speedo.tilt')||'{}');T.ip=!!ti.ip;T.ir=!!ti.ir;if(ti.m==='upright'||ti.m==='flat')T.mount=ti.m}catch(e){}
-  function saveTilt(){try{localStorage.setItem('speedo.tilt',JSON.stringify({ip:T.ip,ir:T.ir,m:T.mount}))}catch(e){}}
   var vd=function(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]};
   var vn=function(a){var l=Math.sqrt(vd(a,a))||1;return [a[0]/l,a[1]/l,a[2]/l]};
   var vx=function(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]};
+  function validTiltVector(a){return Array.isArray(a)&&a.length===3&&a.every(Number.isFinite)&&Math.hypot(a[0],a[1],a[2])>0.5}
+  function updateLevelStatus(message){
+    $('levelStatus').textContent=message||(T.cal?'A saved reference is ready. Tap Level to activate it.':'No saved level yet. Tap Level while stationary to set it.');
+  }
+  try{
+    var ti=JSON.parse(localStorage.getItem('speedo.tilt')||'{}');
+    T.ip=!!ti.ip;T.ir=!!ti.ir;
+    if(ti.m==='upright'||ti.m==='flat')T.mount=ti.m;
+    if(ti.cal&&validTiltVector(ti.cal.u)&&validTiltVector(ti.cal.f)&&validTiltVector(ti.cal.r)){
+      T.cal={u:vn(ti.cal.u),f:vn(ti.cal.f),r:vn(ti.cal.r)};
+    }
+  }catch(e){L('tilt',{storageErr:String(e)})}
+  function saveTilt(){
+    try{
+      localStorage.setItem('speedo.tilt',JSON.stringify({ip:T.ip,ir:T.ir,m:T.mount,cal:T.cal}));
+      return true;
+    }catch(e){L('tilt',{saveErr:String(e)});return false}
+  }
+  updateLevelStatus();
   function onOri(e){
     if(e.beta==null||e.gamma==null)return;
     var b=e.beta*Math.PI/180,g=e.gamma*Math.PI/180;
@@ -424,7 +454,7 @@
   function tiltLight(){$('ltilt').className='li '+(S.sim||T.state==='ok'?'ok':T.state==='denied'?'warn':T.state==='cal'||T.state==='wait'?'warn blink':'')}
   function listen(){
     if(!T.listening){window.addEventListener('deviceorientation',onOri);T.listening=true}
-    if(T.state==='off'||T.state==='denied'||T.state==='none')T.state='wait';
+    if(T.state!=='ok'&&T.state!=='cal'){T.state='wait';T.t0=Date.now()}
   }
   function askTilt(){
     var DO=window.DeviceOrientationEvent;
@@ -436,7 +466,7 @@
   }
   function calibrate(){
     if(S.sim||T.state==='denied'||T.state==='none')return;
-    T.samples=[];T.t0=Date.now();T.cal=null;T.state='cal';
+    T.samples=[];T.t0=Date.now();T.state='cal';
     $('msg').textContent='Calibrating level… keep the car still.';
   }
   function finishCal(){
@@ -446,8 +476,10 @@
     else f=[0,0,-1];                                                                                                                                  // upright: screen faces driver, so forward is into the screen
     var d=vd(f,u0);f=vn([f[0]-d*u0[0],f[1]-d*u0[1],f[2]-d*u0[2]]);
     T.cal={u:u0,f:f,r:vx(f,u0)};T.state='ok';
+    var saved=saveTilt();
+    updateLevelStatus(saved?'Level reference saved. Tap Level to activate it.':'Level set for this page, but could not be saved.');
     L('tilt',{cal:u0.map(function(x){return +x.toFixed(3)}),f:f.map(function(x){return +x.toFixed(3)}),mount:flat?'flat':'upright',mset:T.mount,ip:T.ip?1:0,ir:T.ir?1:0});
-    $('msg').textContent='Level set. Tilt is live.';
+    $('msg').textContent=saved?'Level set. Tilt is live.':'Level set, but could not be saved.';
   }
   var TK2=2.9,TRL=[];
   function setAtt(p,r){
@@ -458,11 +490,6 @@
     TRL.push([x,y]);if(TRL.length>40)TRL.shift();
     for(var k=0;k<8;k++){var q=TRL[TRL.length-1-(8-k)*4];var el=$('tt'+k);if(q){el.setAttribute('cx',(100+q[0]).toFixed(1));el.setAttribute('cy',(100+q[1]).toFixed(1))}else{el.setAttribute('cx',100);el.setAttribute('cy',100)}}
   }
-  function setCarPose(p,r){
-    p=Math.max(-25,Math.min(25,p));r=Math.max(-25,Math.min(25,r));
-    $('carBody').setAttribute('transform','rotate('+(r*.45).toFixed(1)+' 90 43)');
-    $('carHood').setAttribute('transform','rotate('+(-p*.7).toFixed(1)+' 70 38)');
-  }
   function tiltUI(){
     var st=T.state,ok=S.sim||st==='ok',p=T.p,r=T.r,el=$('att');
     if(S.sim){p=Number.isFinite(T.sp)?T.sp:0;r=Number.isFinite(T.sr)?T.sr:0}
@@ -470,7 +497,7 @@
     if(!ok){
       $('pv').textContent='--';$('rv').textContent='--';
       $('pl').textContent=st==='cal'?'Calibrating…':st==='denied'?'Access denied':st==='none'?'No sensor':st==='wait'?'Starting…':'Tap to enable';
-      $('rl').textContent='';el.className='tile tilt att';setAtt(0,0);setCarPose(0,0);return;
+      $('rl').textContent='';el.className='tile tilt att';setAtt(0,0);return;
     }
     if(T.ip)p=-p;if(T.ir)r=-r;
     var mp=Math.abs(p),mr=Math.abs(r),m=Math.max(mp,mr);
@@ -479,10 +506,11 @@
     $('pl').textContent=mp<1.5?'Level':p>0?'\u25B2 Nose up':'\u25BC Nose down';
     $('rl').textContent=mr<1.5?'Level':r>0?'Lean right \u25B6':'\u25C0 Lean left';
     el.className='tile tilt att'+(m>=30?' bad':m>=20?' warn':'');
-    setAtt(p,r);setCarPose(p,r);
+    setAtt(p,r);
   }
   setInterval(function(){
     if(T.u){T.su=T.su?[T.su[0]+.35*(T.u[0]-T.su[0]),T.su[1]+.35*(T.u[1]-T.su[1]),T.su[2]+.35*(T.u[2]-T.su[2])]:T.u.slice()}
+    if(T.state==='wait'&&T.cal&&T.su){T.state='ok';$('msg').textContent='Saved level restored. Tilt is live.'}
     if(T.state==='wait'&&!T.u&&Date.now()-T.t0>4000&&T.t0){T.state='none';L('tilt',{state:'no events'})}
     if(T.state==='cal'){
       if(T.su)T.samples.push(T.su.slice());
@@ -499,17 +527,28 @@
   },100);
   function tiltOff(){
     if(T.listening){window.removeEventListener('deviceorientation',onOri);T.listening=false}
-    T.state='off';T.u=T.su=T.cal=null;
+    T.state='off';T.u=T.su=null;
   }
-  function enableTilt(){askTilt().then(calibrate)}
+  function enableTilt(forceCalibration){
+    askTilt().then(function(){
+      if(T.state==='denied'||T.state==='none')return;
+      if(forceCalibration||!T.cal){calibrate();return}
+      if(T.u){T.state='ok';$('msg').textContent='Saved level restored. Tilt is live.'}
+      else{T.state='wait';T.t0=Date.now();$('msg').textContent='Waiting for tilt sensor…'}
+    });
+  }
   $('att').onclick=function(){if(!S.sim&&(T.state==='off'||T.state==='denied'||T.state==='none'))enableTilt()};
   $('lvl').onclick=function(){if(S.sim){$('msg').textContent='Level is not used in simulation.';return}enableTilt()};
-  $('bcal').onclick=function(){closeScr('scrSet');enableTilt()};
+  $('bcal').onclick=function(){closeScr('scrSet');enableTilt(true)};
   function tiltSet(){$('invp').classList.toggle('on',T.ip);$('invr').classList.toggle('on',T.ir);
     [].forEach.call($('mnt').children,function(b){b.classList.toggle('on',b.dataset.m===T.mount)})}
   $('invp').onclick=function(){T.ip=!T.ip;saveTilt();tiltSet();L('tilt',{invp:T.ip?1:0})};
   $('invr').onclick=function(){T.ir=!T.ir;saveTilt();tiltSet();L('tilt',{invr:T.ir?1:0})};
-  [].forEach.call($('mnt').children,function(b){b.onclick=function(){T.mount=b.dataset.m;saveTilt();tiltSet();L('tilt',{mount:T.mount});if(T.state==='ok')enableTilt()}});
+  [].forEach.call($('mnt').children,function(b){b.onclick=function(){
+    if(T.mount===b.dataset.m)return;
+    T.mount=b.dataset.m;T.cal=null;saveTilt();tiltSet();updateLevelStatus();L('tilt',{mount:T.mount});
+    if(T.listening)enableTilt(true);
+  }});
   tiltSet();
 
   // ---- Debug screen ----
@@ -561,17 +600,20 @@
   function ghHead(){return{'Authorization':'Bearer '+GH.token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}}
   function b64(t){var b=new TextEncoder().encode(t),r='';for(var i=0;i<b.length;i+=8192)r+=String.fromCharCode.apply(null,b.subarray(i,i+8192));return btoa(r)}
   function ghOk(){return !!GH.token&&/^[\w.-]+\/[\w.-]+$/.test(GH.repo)}
-  function readSince(after,cb){
+  function readSince(after,cb,fail){
     flush();
-    if(!LG.db){cb([]);return}
+    if(!LG.db){fail(new Error('The local log database is unavailable.'));return}
     var out=[];
     try{var r=LG.db.transaction('logs').objectStore('logs').openCursor(after?IDBKeyRange.lowerBound(after,true):null);
       r.onsuccess=function(){var c=r.result;if(c){out.push({id:c.key,t:c.value.t,k:c.value.k,d:c.value.d});c.continue()}else cb(out)};
-      r.onerror=function(){cb([])}}catch(e){cb([])}
+      r.onerror=function(){fail(r.error||new Error('Could not read local logs.'))}}catch(e){fail(e)}
   }
   function updUp(){
     if(!GH.token){upStatus('Not set up. Add a repo and token, then tap Save & test.');return}
-    readSince(+localStorage.getItem(UK)||0,function(a){upStatus('Pending upload: '+a.length+' entries'+(pub===true?' · repo is PUBLIC, coordinates are always blurred':''))});
+    readSince(+localStorage.getItem(UK)||0,function(entries){
+      var a=uniqueUploadableLogs(entries);
+      upStatus('Pending upload: '+a.length+' unique non-test entries'+(pub===true?' · repo is PUBLIC, coordinates are always blurred':''));
+    },function(error){upStatus('Could not read local logs: '+error.message)});
   }
   function checkRepo(cb){
     var H=ghHead(),base='https://api.github.com/repos/'+GH.repo;
@@ -594,21 +636,33 @@
     upBusy=true;
     var fail=function(msg,st){upBusy=false;L('upload',{ok:0,why:why,status:st||null,msg:msg});if(manual||$('scrDbg').classList.contains('open'))upStatus('Upload failed: '+msg)};
     var run=function(){
-      readSince(+localStorage.getItem(UK)||0,function(a){
-        if(!a.length){upBusy=false;upStatus('Nothing new to send.');return}
+      readSince(+localStorage.getItem(UK)||0,function(entries){
+        var a=uniqueUploadableLogs(entries),lastScanned=entries.length?entries[entries.length-1].id:null;
+        if(!a.length){
+          if(lastScanned!==null){try{localStorage.setItem(UK,String(lastScanned))}catch(e){upBusy=false;upStatus('No uploadable logs; could not save the local upload checkpoint.');return}}
+          upBusy=false;upStatus(entries.length?'No new unique non-test logs. Test-trip logs remain on this device.':'Nothing new to send.');return
+        }
         var blur=$('blur').checked||pub===true,sent=0;
         (function next(i){
-          if(i>=a.length||i>=2000){upBusy=false;upStatus('Sent '+sent+' entries at '+new Date().toLocaleTimeString()+(blur?' (coordinates blurred)':''));return}
+          if(i>=a.length){
+            if(lastScanned!==null){try{localStorage.setItem(UK,String(lastScanned))}catch(e){upBusy=false;upStatus('Logs uploaded, but the local upload checkpoint could not be saved.');return}}
+            upBusy=false;upStatus('Sent '+sent+' unique non-test entries at '+new Date().toLocaleTimeString()+(blur?' (coordinates blurred)':'')+'. Test-trip logs remain on this device.');return
+          }
           var ch=a.slice(i,i+400),now=new Date(),iso=now.toISOString();
           var txt='{"meta":'+JSON.stringify({app:'speedo',version:VER,device:devId,session:sessId,sent:iso,why:why,coordinatesBlurred:blur,count:ch.length})+',"entries":[\n'+ch.map(function(e){return JSON.stringify({t:new Date(e.t).toISOString(),k:e.k,d:bl(e.d,blur)})}).join(',\n')+'\n]}';
           var path='logs/'+devId+'/'+iso.slice(0,10)+'/'+iso.slice(11,19).replace(/:/g,'')+'-'+sessId+'-'+Math.random().toString(16).slice(2,5)+'.json';
           fetch('https://api.github.com/repos/'+GH.repo+'/contents/'+path,{method:'PUT',headers:Object.assign({'Content-Type':'application/json'},ghHead()),keepalive:why==='hidden'&&txt.length<40000,
             body:JSON.stringify({message:'log '+devId+' '+iso.slice(0,19)+' ('+why+')',content:b64(txt),branch:GH.branch||undefined})}).then(function(r){
-            if(r.status===201||r.status===200){try{localStorage.setItem(UK,String(ch[ch.length-1].id))}catch(e){}sent+=ch.length;next(i+400)}
+            if(r.status===201||r.status===200){
+              sent+=ch.length;
+              try{localStorage.setItem(UK,String(ch[ch.length-1].id))}
+              catch(e){upBusy=false;upStatus('Logs uploaded, but upload progress could not be saved. Avoid retrying until storage is available to prevent duplicates.');return}
+              next(i+400);
+            }
             else fail(r.status===401?'token rejected (401)':r.status===403?'forbidden or rate limited (403)':r.status===404?'repo or branch not found, or no access (404)':'GitHub error '+r.status,r.status);
           }).catch(function(){fail('network error')});
         })(0);
-      });
+      },function(error){fail('could not read local logs: '+error.message)});
     };
     if(pub===null)checkRepo(function(err){if(err&&pub===null)fail(err);else run()});else run();
   }
@@ -623,11 +677,9 @@
 
   function openScr(id){$(id).classList.add('open')}
   function closeScr(id){$(id).classList.remove('open')}
-  $('bt').onclick=function(){renderTrips();$('savedTripsList').hidden=false;$('tripDetailPanel').hidden=true;openScr('scrTrips')};
-  $('ba').onclick=function(){openScr('scrAnalytics')};
+  $('bt').onclick=function(){renderTrips();openScr('scrTrips');window.dispatchEvent(new CustomEvent('speedo:trips-open'))};
   $('bs').onclick=function(){openScr('scrSet')};
   $('ct').onclick=function(){closeScr('scrTrips')};
-  $('ca').onclick=function(){closeScr('scrAnalytics')};
   $('cr').onclick=function(){closeScr('scrReport')};
   $('cs').onclick=function(){closeScr('scrSet')};
 

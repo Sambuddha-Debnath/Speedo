@@ -77,19 +77,6 @@
         <circle class="tg-trail" id="tt0" r="2" opacity="0.07" cx="100" cy="100"/><circle class="tg-trail" id="tt1" r="2.45" opacity="0.115" cx="100" cy="100"/><circle class="tg-trail" id="tt2" r="2.9" opacity="0.16" cx="100" cy="100"/><circle class="tg-trail" id="tt3" r="3.35" opacity="0.205" cx="100" cy="100"/><circle class="tg-trail" id="tt4" r="3.8" opacity="0.25" cx="100" cy="100"/><circle class="tg-trail" id="tt5" r="4.25" opacity="0.295" cx="100" cy="100"/><circle class="tg-trail" id="tt6" r="4.7" opacity="0.34" cx="100" cy="100"/><circle class="tg-trail" id="tt7" r="5.15" opacity="0.385" cx="100" cy="100"/>
         <g id="bub"><circle class="b1" cx="100" cy="100" r="9"/><circle class="b2" cx="100" cy="100" r="3"/></g>
       </svg>
-      <svg class="car-demo" viewBox="0 0 180 72" role="img" aria-label="Car pitch and roll illustration">
-        <g id="carBody">
-          <circle cx="49" cy="53" r="10" fill="#08090b" stroke="var(--acc)" stroke-width="3"/>
-          <circle cx="139" cy="53" r="10" fill="#08090b" stroke="var(--acc)" stroke-width="3"/>
-          <path d="M22 48 30 39 61 34 78 17 119 17 139 35 159 39 168 48 165 56 24 56Z" fill="#25292c" stroke="var(--acc)" stroke-width="2.5" stroke-linejoin="round"/>
-          <path d="M68 33 82 20 99 20 99 33ZM103 20 117 20 132 34 103 34Z" fill="#b8ff5a" fill-opacity=".26" stroke="var(--acc)" stroke-width="1.5" stroke-linejoin="round"/>
-          <path d="M29 43 70 38" fill="none" stroke="#b8ff5a" stroke-width="2"/>
-          <g id="carHood" transform="rotate(0 70 38)">
-            <path d="M70 38 139 36 159 40 164 47 76 47Z" fill="#b8ff5a" stroke="#08090b" stroke-width="1.5" stroke-linejoin="round"/>
-          </g>
-          <path d="M24 46h8M158 46h8" stroke="#f3f5f6" stroke-width="3" stroke-linecap="round"/>
-        </g>
-      </svg>
       <div class="tx"><div class="tc"><div class="sub">Pitch</div><div class="v" id="pv">--</div><div class="sub" id="pl">Tap to enable</div></div><div class="tc"><div class="sub">Roll</div><div class="v" id="rv">--</div><div class="sub" id="rl"></div></div></div></div>
   </div>
   <div class="side r">
@@ -102,8 +89,7 @@
 <div class="bar">
   <button class="btn main" id="go">Start</button>
   <button class="btn" id="lvl">Level</button>
-  <button class="btn" id="bt">Trips</button>
-  <button class="btn" id="ba">Analytics</button>
+  <button class="btn" id="bt"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 19V5h2v12h16v2H3Zm4-4 4-5 3 2 5-7 2 1-6 9-3-2-3 4H7Z" fill="currentColor"/><circle cx="19" cy="6" r="2" fill="currentColor"/></svg><span>Trips</span></button>
   <button class="btn" id="bm">Map</button>
   <button class="btn" id="bs">Settings</button>
 </div>
@@ -125,22 +111,19 @@
 
 <section class="screen ai-screen" id="scrTrips">
   <div class="sh"><h2>Saved Trips</h2><button class="btn sm" id="ct" style="height:38px">Close</button></div>
-  <div class="sb" id="savedTripsList"><div class="tile"><div id="tl"></div></div></div>
-  <div class="sb" id="tripDetailPanel" hidden>
-    <div class="tile">
-      <div class="trip-detail-heading"><button class="btn sm" id="tripDetailBack">Saved trips</button><h3 id="tripDetailTitle">Trip details</h3></div>
-      <div id="aiReport"><p class="ai-muted">Choose a saved trip to view its details.</p></div>
-      <div class="trip-detail-actions">
-        <label class="row"><input type="checkbox" id="includeRoute"> Include exact route coordinates in exports and uploads</label>
-        <button class="btn sm" id="exportReport">Export report JSON</button>
+  <div class="trip-panel" id="savedTripsPanel">
+    <div class="sb" id="savedTripsList"><div class="tile"><div id="tl"></div></div></div>
+    <div class="sb" id="tripDetailPanel" hidden>
+      <div class="tile">
+        <div class="trip-detail-heading"><button class="btn sm" id="tripDetailBack">Saved trips</button><h3 id="tripDetailTitle">Trip details</h3></div>
+        <div id="aiReport"><p class="ai-muted">Choose a saved trip to view its details.</p></div>
+        <div class="trip-detail-actions">
+          <label class="row"><input type="checkbox" id="includeRoute"> Include exact route coordinates in exports and uploads</label>
+          <button class="btn sm" id="exportReport">Export report JSON</button>
+        </div>
       </div>
     </div>
   </div>
-</section>
-
-<section class="screen ai-screen" id="scrAnalytics">
-  <div class="sh"><h2>Trip Analytics</h2><button class="btn sm" id="ca" style="height:38px">Close</button></div>
-  <div class="analytics-action"><button class="btn main" id="reportToGitHub">Report to GitHub</button></div>
 </section>
 
 <section class="screen" id="scrReport">
@@ -163,10 +146,11 @@
     <div class="tile"><div class="k">Speed alert</div><div class="row"><input id="lim" type="number" inputmode="numeric" min="10" max="240" value="60"><span style="color:var(--mute);font-size:13px;flex:1">km/h limit</span><button class="btn sm" id="alert" style="padding:0 18px">Off</button></div></div>
     <div class="g2"><button class="btn sm tg" id="bosm">OSM limits</button><button class="btn sm tg" id="bcam">Camera alerts</button></div>
     <div class="g2"><button class="btn sm" id="reset">Reset trip</button><button class="btn sm" id="hud" aria-pressed="false">HUD mirror: Off</button></div>
+    <div class="tile"><div class="k">Trip reports</div><div class="sub">Select a trip from Saved Trips before uploading its report.</div><button class="btn sm main" id="reportToGitHub" style="margin-top:8px">Report to GitHub</button></div>
     <div class="tile"><div class="k">Simulation (no GPS)</div><div class="row"><select class="btn sm" id="scn" style="flex:1"><option value="city">City drive</option><option value="hwy">Highway</option><option value="jam">Stop and go</option></select><button class="btn sm" id="demo" style="flex:1">Run simulation</button></div></div>
     <div class="g2"><button class="btn sm tg" id="invp">Invert pitch</button><button class="btn sm tg" id="invr">Invert roll</button></div>
     <div class="tile"><div class="k">Phone mount (forward direction)</div><div class="row"><div class="seg" id="mnt"><button data-m="auto" class="on">Auto</button><button data-m="upright">Upright</button><button data-m="flat">Flat</button></div></div></div>
-    <button class="btn sm" id="bcal">Calibrate level</button>
+    <div class="tile"><div class="k">Level reference</div><div class="sub" id="levelStatus">No saved level yet. Tap Level while stationary to set it.</div><button class="btn sm" id="bcal" style="margin-top:8px">Reset level</button></div>
     <button class="btn sm" id="bd">Debug logs</button>
     <div class="tile"><div class="k">Location</div><div class="v" id="coord" style="font-size:17px;white-space:normal">Waiting for GPS…</div><div class="sub" id="meta">Accuracy –</div><div id="dbg"></div><div style="margin-top:8px"><a id="maps" href="#" style="color:var(--acc);text-decoration:none;font-size:14px;font-weight:600">Open in Maps</a></div></div>
   </div>

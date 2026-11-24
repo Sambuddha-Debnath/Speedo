@@ -78,6 +78,7 @@ body.hud #dash{transform:scaleX(-1)}
 select.btn{text-align:center;text-align-last:center}
 .screen{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;padding:max(8px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));z-index:5}
 .screen.open{display:flex}
+#scrReport{z-index:6}
 .screen h2{margin:0;font-size:18px}
 .sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex:none}
 .sb{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:grid;gap:10px;align-content:start;max-width:560px;width:100%;margin:0 auto}
@@ -96,7 +97,8 @@ input#lim{width:84px;padding:9px;border-radius:10px;border:1px solid var(--line)
 .ta button{border:0;border-radius:8px;padding:7px 9px;background:var(--bg);color:var(--acc);font-weight:700;font-size:12px}
 #dbg{font-size:11px;color:var(--mute);margin-top:4px}
 .over #spd,.over #spd2{fill:var(--warn)}
-body.over::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);pointer-events:none;animation:bl .5s infinite alternate;z-index:9}
+body.over::after,body.motion-medium::after,body.motion-high::after{content:"";position:fixed;inset:0;border:6px solid var(--warn);pointer-events:none;animation:bl .5s infinite alternate;z-index:9}
+body.motion-medium:not(.over):not(.motion-high)::after{border-color:var(--amb)}
 @keyframes bl{to{opacity:.15}}
 @media (orientation:landscape){
   #dash{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"l g r"}

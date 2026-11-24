@@ -5,6 +5,7 @@ export async function uploadTripReport({ repository, token, report, includeRoute
   const credential = String(token || '').trim();
   if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) throw new Error('Enter the repository as owner/name.');
   if (!credential) throw new Error('Enter a GitHub token with Contents: read and write permission.');
+  if (report.simulated) throw new Error('Simulated test trips stay on this device and cannot be uploaded.');
 
   const route = includeRoute ? samples
     .filter(sample => sample.quality.gpsValid && Number.isFinite(sample.gps.latitude) && Number.isFinite(sample.gps.longitude))

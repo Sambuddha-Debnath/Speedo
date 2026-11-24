@@ -12,6 +12,7 @@ import { detectEvents } from '../js/ai/event-detector.js';
 import { calculateScore } from '../js/ai/scoring-engine.js';
 import { tripMetrics } from '../js/ai/trip-analysis.js';
 import { uploadTripReport } from '../js/reports/github-upload.js';
+import { uniqueUploadableLogs } from '../js/logs/upload-filter.js';
 
 const results = [];
 function test(name, fn) {
@@ -75,6 +76,19 @@ test('detects hard acceleration and braking as estimates', () => {
   if (!acceleration.some(event => event.eventType === 'possible_harsh_acceleration')) throw new Error('acceleration event missing');
   if (!braking.some(event => event.eventType === 'possible_harsh_braking')) throw new Error('braking event missing');
 });
+test('separates medium and high acceleration and braking severity', () => {
+  const mediumAcceleration = detectEvents([sample(1000, 20), sample(2000, 31)]);
+  const highAcceleration = detectEvents([sample(1000, 20), sample(2000, 40)]);
+  const mediumBraking = detectEvents([sample(1000, 60), sample(2000, 48)]);
+  const highBraking = detectEvents([sample(1000, 60), sample(2000, 40)]);
+  const severity = (events, type) => events.find(event => event.eventType === type)?.severity;
+  if (severity(mediumAcceleration, 'possible_harsh_acceleration') !== 'medium' ||
+      severity(highAcceleration, 'possible_harsh_acceleration') !== 'high' ||
+      severity(mediumBraking, 'possible_harsh_braking') !== 'medium' ||
+      severity(highBraking, 'possible_harsh_braking') !== 'high') {
+    throw new Error('motion severity did not match medium/high thresholds');
+  }
+});
 test('flags continuous prolonged overspeed', () => {
   const samples = Array.from({ length: 62 }, (_, index) => sample(1000 + index * 1000, 80, { speedLimit: 60 }));
   if (!detectEvents(samples).some(event => event.eventType === 'prolonged_overspeed')) throw new Error('prolonged overspeed event missing');
@@ -100,6 +114,26 @@ test('trip summary reports moving time, elevation, overspeed and quality', () =>
   if (metrics.overspeedDurationSeconds !== 1 || metrics.gpsQuality.coveragePercent !== 100) throw new Error('incorrect quality or overspeed summary');
   if (metrics.gradient.minimumPercent !== -3 || metrics.gradient.maximumPercent !== 4) throw new Error('incorrect gradient range');
 });
+test('log uploads deduplicate IDs and keep simulated trip logs local', () => {
+  const entries = [
+    { id: 1, k: 'gps', d: { s: 'strong' } },
+    { id: 2, k: 'start', d: { sim: 1 } },
+    { id: 3, k: 'gps', d: { s: 'strong' } },
+    { id: 4, k: 'fix', d: { sim: 1 } },
+    { id: 5, k: 'stop', d: { sim: 1 } },
+    { id: 6, k: 'fix', d: { sim: 0 } },
+    { id: 6, k: 'fix', d: { sim: 0 } },
+    { id: 7, k: 'start', d: { sim: 0 } },
+    { id: 8, k: 'vis', d: {} },
+    { id: 9, k: 'stop', d: { sim: 0 } },
+    { id: 10, k: 'fix', d: { sim: 1 } },
+    { id: 11, k: 'start', d: { sim: 1 } },
+    { id: 12, k: 'session', d: {} },
+    { id: 13, k: 'error', d: { marker: 'after-session' } }
+  ];
+  const ids = uniqueUploadableLogs(entries).map(entry => entry.id);
+  if (ids.join(',') !== '1,6,7,8,9,12,13') throw new Error(`unexpected uploadable log IDs: ${ids.join(',')}`);
+});
 
 await testAsync('report upload rejects missing credentials and malformed repositories', async () => {
   const report = { tripId: 'trip-test', events: [] };
@@ -115,6 +149,22 @@ await testAsync('report upload rejects missing credentials and malformed reposit
     }
     if (!rejected) throw new Error('invalid upload configuration was accepted');
   }
+});
+
+await testAsync('simulated test trips remain local', async () => {
+  let rejected = false;
+  try {
+    await uploadTripReport({
+      repository: 'owner/repo',
+      token: 'test-token',
+      report: { tripId: 'simulation-test', simulated: true, events: [] },
+      includeRoute: false,
+      samples: []
+    });
+  } catch (error) {
+    rejected = error.message.includes('stay on this device');
+  }
+  if (!rejected) throw new Error('simulated test trip was not rejected');
 });
 
 await testAsync('report upload surfaces authentication and permission failures', async () => {
