@@ -65,7 +65,7 @@
 }
 
 .bar {
-  grid-template-columns: 1.2fr repeat(4, minmax(0, .8fr));
+  grid-template-columns: 1.15fr repeat(5, minmax(0, .8fr));
   gap: 5px;
 }
 
@@ -140,4 +140,107 @@ input#lim {
 
 .gauge text {
   fill: var(--text);
+}
+
+.heading-tile {
+  gap: 2px;
+}
+
+.heading-tile .v {
+  font-size: clamp(16px, 4vw, 23px);
+}
+
+.heading-tile .btn {
+  height: 32px;
+  margin-top: 3px;
+  font-size: 12px;
+}
+
+.car-demo {
+  flex: none !important;
+  width: clamp(74px, 23vw, 112px) !important;
+  height: 64px !important;
+  overflow: visible;
+}
+
+#carBody,
+#carHood {
+  transform-box: view-box;
+  transition: transform .16s ease-out;
+}
+
+.trip-detail-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.trip-detail-heading h3 {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+}
+
+.trip-detail-heading .btn {
+  flex: none;
+}
+
+.trip-detail-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.trip-detail-actions .row {
+  align-items: flex-start;
+  font-size: 12px;
+  color: var(--mute);
+}
+
+.trip-detail-actions input[type="checkbox"] {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+#tripDetailPanel[hidden] {
+  display: none;
+}
+
+#savedTripsList[hidden] {
+  display: none;
+}
+
+.analytics-action {
+  display: grid;
+  flex: 1;
+  place-items: center;
+}
+
+.analytics-action .btn {
+  width: min(100%, 360px);
+}
+
+.report-field {
+  display: block;
+  color: var(--mute);
+  font-size: 12px;
+}
+
+.report-field .txt {
+  margin-top: 5px;
+}
+
+@media (orientation: landscape) {
+  .bar {
+    grid-template-columns: 1.15fr repeat(5, minmax(0, .8fr));
+  }
+
+  .att .car-demo {
+    width: clamp(100px, 16vw, 150px) !important;
+    height: 58px !important;
+  }
 }

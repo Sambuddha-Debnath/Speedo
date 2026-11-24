@@ -1,7 +1,7 @@
 (function(){
   var $=function(id){return document.getElementById(id)};
   var MAXV=240;
-  var S={max:0,dist:0,moving:0,t0:0,last:null,watch:null,run:false,wake:null,demo:null,tick:null,v:0,hist:[],pts:[],ended:false,al:false,lim:60,lastBeep:0,lastPt:0,fixes:0,lastFix:0,raw:null,sim:false,view:'digital',over:false};
+  var S={max:0,dist:0,moving:0,t0:0,last:null,watch:null,run:false,wake:null,demo:null,tick:null,v:0,pts:[],ended:false,al:false,lim:60,lastBeep:0,lastPt:0,fixes:0,lastFix:0,raw:null,sim:false,view:'digital',over:false};
   var VER='SPEEDO v11';
   // ---- Logging: IndexedDB ring buffer ----
   var LG={db:null,q:[],MAX:6000,fail:false};
@@ -82,18 +82,9 @@
     if(t!==lastSt){lastSt=t;L('gps',{s:t})}
   }
 
-  var HC=null,HP=null;
   function setHeading(h){
     h=((h%360)+360)%360;
-    if(HP==null)HC=h;else HC+=((h-HP+540)%360)-180;   // unwrap so the ring never spins the long way round
-    HP=h;
-    $('ringg').style.transform='rotate('+(-HC)+'deg)';
     $('head').textContent=Math.round(h)+'° '+dir(h);
-  }
-  function spark(){
-    var h=S.hist,m=Math.max(10,Math.max.apply(null,h.concat([0])));
-    var pts=h.map(function(x,i){return (i/119*300).toFixed(1)+','+(48-x/m*46).toFixed(1)}).join(' ');
-    $('line').setAttribute('points',pts);
   }
   function render(){
     var kmh=S.v*3.6,p=Math.min(kmh/MAXV,1),red=kmh>=180;
@@ -101,9 +92,6 @@
     var arc=$('arc');arc.style.strokeDashoffset=424.1*(1-p);
     arc.style.stroke=arc.style.color=(red||S.over)?'var(--warn)':'var(--text)';$('gauge').classList.toggle('hot',red||S.over);
     $('needle').style.transform='rotate('+(-135+270*p)+'deg)';
-    $('max').innerHTML=Math.round(S.max*3.6)+' <small>km/h</small>';
-    var avg=S.moving>0?S.dist/S.moving:0;
-    $('avg').innerHTML=Math.round(avg*3.6)+' <small>km/h</small>';
     $('dist').innerHTML=(S.dist/1000).toFixed(2)+' <small>km</small>';
     $('lrec').className='li '+(S.run?'ok blink':'');
     alertCheck(kmh);
@@ -132,7 +120,6 @@
     S.v=v;
     if(dt>3)L('gap',{dt:+dt.toFixed(1)});
     L('fix',{la:+c.latitude.toFixed(5),lo:+c.longitude.toFixed(5),alt:c.altitude!=null?Math.round(c.altitude):null,acc:+acc.toFixed(1),raw:c.speed!=null&&!isNaN(c.speed)?+(c.speed*3.6).toFixed(1):null,v:+(v*3.6).toFixed(1),dt:+dt.toFixed(1),hd:c.heading!=null&&!isNaN(c.heading)?Math.round(c.heading):null,lm:LIM.v,as:E.sm!=null?+E.sm.toFixed(1):null,gr:E.gr!=null?+E.gr.toFixed(1):null,tp:T.state==='ok'?+T.p.toFixed(1):null,tr:T.state==='ok'?+T.r.toFixed(1):null,sim:S.sim?1:0});
-    S.hist.push(v);if(S.hist.length>120)S.hist.shift();spark();
     if(v>S.max)S.max=v;
     if(S.run&&now-S.lastPt>=1000&&S.pts.length<20000){S.lastPt=now;S.pts.push([Math.round(now/1000),+c.latitude.toFixed(6),+c.longitude.toFixed(6),+(v*3.6).toFixed(1),c.altitude!=null?Math.round(c.altitude):'',Math.round(acc)])}
     if(S.last&&v>0&&acc<=40&&dt>0&&dt<10){
@@ -198,7 +185,7 @@
     var wasRunning=S.run;if(wasRunning)window.dispatchEvent(new CustomEvent('speedo:trip-stop',{detail:{timestamp:Date.now(),simulated:S.sim,reason:'reset'}}));
     saveTrip();S.pts=[];
     E.s=[];E.gr=null;drawElev();
-    var was=S.run;S.max=0;S.dist=0;S.moving=0;S.last=null;S.hist=[];spark();S.t0=was?Date.now():0;
+    var was=S.run;S.max=0;S.dist=0;S.moving=0;S.last=null;S.t0=was?Date.now():0;
     $('time').textContent='00:00:00';if(wasRunning)window.dispatchEvent(new CustomEvent('speedo:trip-start',{detail:{timestamp:S.t0||Date.now(),simulated:S.sim}}));render();
   }
 
@@ -224,7 +211,7 @@
     var h='';
     loadTrips().forEach(function(t){
       var avg=t.mv>0?t.d/t.mv*3.6:0;
-      h+='<div class="trip"><div><b>'+new Date(t.s).toLocaleString([],{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+(t.sim?' (sim)':'')+'</b><br><span>'+(t.d/1000).toFixed(2)+' km · '+dur((t.e-t.s)/1000)+' · max '+Math.round(t.mx)+' · avg '+Math.round(avg)+' km/h</span></div><div class="ta"><button data-a="csv" data-id="'+t.id+'">CSV</button><button data-a="gpx" data-id="'+t.id+'">GPX</button><button data-a="del" data-id="'+t.id+'">✕</button></div></div>';
+      h+='<div class="trip"><div><b>'+new Date(t.s).toLocaleString([],{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+(t.sim?' (sim)':'')+'</b><br><span>'+(t.d/1000).toFixed(2)+' km · '+dur((t.e-t.s)/1000)+' · max '+Math.round(t.mx)+' · avg '+Math.round(avg)+' km/h</span></div><div class="ta"><button data-a="details" data-id="'+t.id+'">Details</button><button data-a="csv" data-id="'+t.id+'">CSV</button><button data-a="gpx" data-id="'+t.id+'">GPX</button><button data-a="del" data-id="'+t.id+'">✕</button></div></div>';
     });
     $('tl').innerHTML=h||'<span style="color:var(--mute);font-size:13px">No trips yet. A trip is saved when you tap Stop.</span>';
   }
@@ -247,6 +234,7 @@
     var b=e.target.closest('button');if(!b)return;
     var id=+b.dataset.id,a=loadTrips(),t=a.filter(function(x){return x.id===id})[0];if(!t)return;
     if(b.dataset.a==='del'){if(confirm('Delete this trip?')){putTrips(a.filter(function(x){return x.id!==id}));renderTrips()}}
+    else if(b.dataset.a==='details')window.dispatchEvent(new CustomEvent('speedo:trip-detail-request',{detail:{tripId:'legacy-'+id}}));
     else exportTrip(t,b.dataset.a);
   };
 
@@ -470,14 +458,19 @@
     TRL.push([x,y]);if(TRL.length>40)TRL.shift();
     for(var k=0;k<8;k++){var q=TRL[TRL.length-1-(8-k)*4];var el=$('tt'+k);if(q){el.setAttribute('cx',(100+q[0]).toFixed(1));el.setAttribute('cy',(100+q[1]).toFixed(1))}else{el.setAttribute('cx',100);el.setAttribute('cy',100)}}
   }
+  function setCarPose(p,r){
+    p=Math.max(-25,Math.min(25,p));r=Math.max(-25,Math.min(25,r));
+    $('carBody').setAttribute('transform','rotate('+(r*.45).toFixed(1)+' 90 43)');
+    $('carHood').setAttribute('transform','rotate('+(-p*.7).toFixed(1)+' 70 38)');
+  }
   function tiltUI(){
     var st=T.state,ok=S.sim||st==='ok',p=T.p,r=T.r,el=$('att');
-    if(S.sim){p=T.sp;r=T.sr}
+    if(S.sim){p=Number.isFinite(T.sp)?T.sp:0;r=Number.isFinite(T.sr)?T.sr:0}
     tiltLight();
     if(!ok){
       $('pv').textContent='--';$('rv').textContent='--';
       $('pl').textContent=st==='cal'?'Calibrating…':st==='denied'?'Access denied':st==='none'?'No sensor':st==='wait'?'Starting…':'Tap to enable';
-      $('rl').textContent='';el.className='tile tilt att';setAtt(0,0);return;
+      $('rl').textContent='';el.className='tile tilt att';setAtt(0,0);setCarPose(0,0);return;
     }
     if(T.ip)p=-p;if(T.ir)r=-r;
     var mp=Math.abs(p),mr=Math.abs(r),m=Math.max(mp,mr);
@@ -486,7 +479,7 @@
     $('pl').textContent=mp<1.5?'Level':p>0?'\u25B2 Nose up':'\u25BC Nose down';
     $('rl').textContent=mr<1.5?'Level':r>0?'Lean right \u25B6':'\u25C0 Lean left';
     el.className='tile tilt att'+(m>=30?' bad':m>=20?' warn':'');
-    setAtt(p,r);
+    setAtt(p,r);setCarPose(p,r);
   }
   setInterval(function(){
     if(T.u){T.su=T.su?[T.su[0]+.35*(T.u[0]-T.su[0]),T.su[1]+.35*(T.u[1]-T.su[1]),T.su[2]+.35*(T.u[2]-T.su[2])]:T.u.slice()}
@@ -630,9 +623,12 @@
 
   function openScr(id){$(id).classList.add('open')}
   function closeScr(id){$(id).classList.remove('open')}
-  $('bt').onclick=function(){renderTrips();openScr('scrTrips')};
+  $('bt').onclick=function(){renderTrips();$('savedTripsList').hidden=false;$('tripDetailPanel').hidden=true;openScr('scrTrips')};
+  $('ba').onclick=function(){openScr('scrAnalytics')};
   $('bs').onclick=function(){openScr('scrSet')};
   $('ct').onclick=function(){closeScr('scrTrips')};
+  $('ca').onclick=function(){closeScr('scrAnalytics')};
+  $('cr').onclick=function(){closeScr('scrReport')};
   $('cs').onclick=function(){closeScr('scrSet')};
 
   $('go').onclick=function(){S.run?stop():start()};

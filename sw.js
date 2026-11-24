@@ -1,4 +1,4 @@
-const C='SPEEDO-v11';
+const C='SPEEDO-v11.1';
 const A=[
   './','index.html','manifest.json','icon-192.png','icon-512.png',
   './css/dashboard.css','./css/main.css','./css/analytics.css','./css/map.css','./css/places.css','./css/responsive.css',

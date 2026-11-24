@@ -68,7 +68,7 @@
 
   <div class="side l">
     <div class="tile tilt att" id="att"><div class="k">Tilt</div>
-      <svg viewBox="0 0 200 200" aria-label="Tilt meter">
+      <svg class="tilt-meter" viewBox="0 0 200 200" aria-label="Tilt meter">
         <path class="tg-br" d="M4 26V4H26M174 4H196V26M196 174V196H174M26 196H4V174"/>
         <path class="tg-x" d="M12 100H66M134 100H188M100 12V66M100 134V188"/>
         <circle class="tg-ring" cx="100" cy="100" r="29"/><circle class="tg-ring tg-r20" cx="100" cy="100" r="58"/><circle class="tg-r30" cx="100" cy="100" r="87"/>
@@ -77,10 +77,23 @@
         <circle class="tg-trail" id="tt0" r="2" opacity="0.07" cx="100" cy="100"/><circle class="tg-trail" id="tt1" r="2.45" opacity="0.115" cx="100" cy="100"/><circle class="tg-trail" id="tt2" r="2.9" opacity="0.16" cx="100" cy="100"/><circle class="tg-trail" id="tt3" r="3.35" opacity="0.205" cx="100" cy="100"/><circle class="tg-trail" id="tt4" r="3.8" opacity="0.25" cx="100" cy="100"/><circle class="tg-trail" id="tt5" r="4.25" opacity="0.295" cx="100" cy="100"/><circle class="tg-trail" id="tt6" r="4.7" opacity="0.34" cx="100" cy="100"/><circle class="tg-trail" id="tt7" r="5.15" opacity="0.385" cx="100" cy="100"/>
         <g id="bub"><circle class="b1" cx="100" cy="100" r="9"/><circle class="b2" cx="100" cy="100" r="3"/></g>
       </svg>
+      <svg class="car-demo" viewBox="0 0 180 72" role="img" aria-label="Car pitch and roll illustration">
+        <g id="carBody">
+          <circle cx="49" cy="53" r="10" fill="#08090b" stroke="var(--acc)" stroke-width="3"/>
+          <circle cx="139" cy="53" r="10" fill="#08090b" stroke="var(--acc)" stroke-width="3"/>
+          <path d="M22 48 30 39 61 34 78 17 119 17 139 35 159 39 168 48 165 56 24 56Z" fill="#25292c" stroke="var(--acc)" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M68 33 82 20 99 20 99 33ZM103 20 117 20 132 34 103 34Z" fill="#b8ff5a" fill-opacity=".26" stroke="var(--acc)" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M29 43 70 38" fill="none" stroke="#b8ff5a" stroke-width="2"/>
+          <g id="carHood" transform="rotate(0 70 38)">
+            <path d="M70 38 139 36 159 40 164 47 76 47Z" fill="#b8ff5a" stroke="#08090b" stroke-width="1.5" stroke-linejoin="round"/>
+          </g>
+          <path d="M24 46h8M158 46h8" stroke="#f3f5f6" stroke-width="3" stroke-linecap="round"/>
+        </g>
+      </svg>
       <div class="tx"><div class="tc"><div class="sub">Pitch</div><div class="v" id="pv">--</div><div class="sub" id="pl">Tap to enable</div></div><div class="tc"><div class="sub">Roll</div><div class="v" id="rv">--</div><div class="sub" id="rl"></div></div></div></div>
   </div>
   <div class="side r">
-    <div class="tile"><div class="k">Heading</div><div class="hrow"><svg class="ring" viewBox="0 0 100 100"><g id="ringg"><circle cx="50" cy="50" r="40" fill="none" stroke="#a8a396" stroke-width="2"/><g font-size="15" font-weight="700" text-anchor="middle" style="fill:var(--text)"><text x="50" y="30">N</text><text x="50" y="30" transform="rotate(90 50 50)">E</text><text x="50" y="30" transform="rotate(180 50 50)">S</text><text x="50" y="30" transform="rotate(270 50 50)">W</text></g></g><path d="M50 1L57 13H43Z" fill="var(--acc)"/></svg><div class="v" id="head">–</div></div></div>
+    <div class="tile heading-tile"><div class="k">Heading</div><div class="v" id="head">–</div><button class="btn sm" id="savePlaceDash">Save Place</button></div>
     <div class="tile"><div class="k">Trip</div><div class="v" id="dist">0.00 <small>km</small></div><div class="sub" id="time">00:00:00</div></div>
   </div>
 </div>
@@ -90,6 +103,7 @@
   <button class="btn main" id="go">Start</button>
   <button class="btn" id="lvl">Level</button>
   <button class="btn" id="bt">Trips</button>
+  <button class="btn" id="ba">Analytics</button>
   <button class="btn" id="bm">Map</button>
   <button class="btn" id="bs">Settings</button>
 </div>
@@ -110,32 +124,35 @@
 </section>
 
 <section class="screen ai-screen" id="scrTrips">
-  <div class="sh"><h2>Trips &amp; Analytics</h2><button class="btn sm" id="ct" style="height:38px">Close</button></div>
-  <div class="sb">
-    <div class="g2">
-      <div class="tile"><div class="k">Max speed</div><div class="v" id="max">0</div></div>
-      <div class="tile"><div class="k">Avg moving</div><div class="v" id="avg">0</div></div>
-    </div>
-    <div class="tile"><div class="k">Speed history (last 2 min)</div><svg viewBox="0 0 300 50" preserveAspectRatio="none" style="width:100%;height:50px;margin-top:6px"><polyline id="line" fill="none" stroke="var(--acc)" stroke-width="2" points=""/></svg></div>
-    <div class="tile"><div class="k">Saved trips (on this phone)</div><div id="tl" style="margin-top:6px"></div></div>
-    <div class="tile"><div class="k">Saved places</div><p class="ai-muted">Manage locally saved locations and open them on the map.</p><button class="btn sm" id="openPlaces">Open Places</button></div>
-    <div class="ai-banner"><b>On-device driving analytics</b><span id="aiModelStatus">Initialising local analytics…</span></div>
-    <div class="ai-stats" id="aiStats"></div>
-    <div class="tile"><div class="k">Personal driving profile</div><div class="report-metrics" id="aiProfile"></div><p class="ai-muted" id="aiProfileNote"></p></div>
-    <div class="tile"><div class="k">Recent driving score trend</div><div class="ai-trend" id="aiTrend"></div><small class="ai-muted">Each bar represents an analysed trip, oldest to newest.</small></div>
-    <div class="tile"><div class="k">Trip analytics</div><div id="aiTripList" class="ai-trip-list"><p class="ai-muted">Loading trips…</p></div></div>
-    <div class="tile"><div class="k">Selected trip report</div><div id="aiReport"><p class="ai-muted">Select Report beside a trip.</p></div>
-      <div class="report-actions" id="reportActions" hidden>
+  <div class="sh"><h2>Saved Trips</h2><button class="btn sm" id="ct" style="height:38px">Close</button></div>
+  <div class="sb" id="savedTripsList"><div class="tile"><div id="tl"></div></div></div>
+  <div class="sb" id="tripDetailPanel" hidden>
+    <div class="tile">
+      <div class="trip-detail-heading"><button class="btn sm" id="tripDetailBack">Saved trips</button><h3 id="tripDetailTitle">Trip details</h3></div>
+      <div id="aiReport"><p class="ai-muted">Choose a saved trip to view its details.</p></div>
+      <div class="trip-detail-actions">
         <label class="row"><input type="checkbox" id="includeRoute"> Include exact route coordinates in exports and uploads</label>
         <button class="btn sm" id="exportReport">Export report JSON</button>
-        <label class="report-field">GitHub repository (owner/name)<input class="txt" id="reportRepo" placeholder="owner/repo" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
-        <label class="report-field">Fine-grained token (Contents: read/write)<input class="txt" id="reportToken" type="password" placeholder="Entered only for this upload" autocomplete="off"></label>
-        <button class="btn main sm" id="uploadReport">Upload Report</button>
-        <p class="ai-muted" id="reportUploadStatus" role="status">Uploads are manual. Tokens are not saved. A browser token is visible to scripts running on this site.</p>
       </div>
     </div>
-    <div class="row"><button class="btn sm" id="aiRefresh" style="flex:1">Refresh analytics</button><button class="btn sm" id="aiClear" style="flex:1">Clear analytics</button></div>
-    <p class="ai-foot">Scores and events are estimates from phone sensors, not a certified assessment of driving safety. All analytics are stored locally.</p>
+  </div>
+</section>
+
+<section class="screen ai-screen" id="scrAnalytics">
+  <div class="sh"><h2>Trip Analytics</h2><button class="btn sm" id="ca" style="height:38px">Close</button></div>
+  <div class="analytics-action"><button class="btn main" id="reportToGitHub">Report to GitHub</button></div>
+</section>
+
+<section class="screen" id="scrReport">
+  <div class="sh"><h2>Report to GitHub</h2><button class="btn sm" id="cr" style="height:38px">Close</button></div>
+  <div class="sb">
+    <div class="tile">
+      <p class="ai-muted">Uploads only the selected trip report. The token is used once and never saved.</p>
+      <label class="report-field">GitHub repository (owner/name)<input class="txt" id="reportRepo" placeholder="owner/name" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+      <label class="report-field">Fine-grained token<input class="txt" id="reportToken" type="password" placeholder="Contents: read and write" autocomplete="off"></label>
+      <button class="btn main sm" id="uploadReport">Upload report</button>
+      <p class="ai-muted" id="reportUploadStatus" role="status">Uploads are manual. A browser token is visible to scripts running on this site.</p>
+    </div>
   </div>
 </section>
 

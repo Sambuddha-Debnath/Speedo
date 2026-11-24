@@ -96,7 +96,9 @@ window.addEventListener('speedo:gps-fix', event => { latestFix = event.detail; }
 window.addEventListener('speedo:save-place-request', () => { savePlace().catch(reportPlaceError); });
 window.addEventListener('speedo:places-open', () => { renderPlaces().catch(reportPlaceError); });
 
-$('savePlace')?.addEventListener('click', () => { savePlace().catch(reportPlaceError); });
+['savePlace', 'savePlaceDash'].forEach(id => {
+  $(id)?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('speedo:save-place-request')));
+});
 $('openPlaces')?.addEventListener('click', () => {
   $('scrPlaces').classList.add('open');
   renderPlaces().catch(reportPlaceError);
